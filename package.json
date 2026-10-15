@@ -1,0 +1,21 @@
+{
+  "name": "hexabuild-returns",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "shared",
+    "server",
+    "web"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n server,web -c blue,green \"npm run dev -w server\" \"npm run dev -w web\"",
+    "sync": "npm run sync -w server",
+    "typecheck": "npm run typecheck -w server && npm run typecheck -w web",
+    "db:reset": "npm run db:reset -w server",
+    "diagnose": "npm run diagnose -w server --",
+    "import": "npm run import -w server --"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.0"
+  }
+}

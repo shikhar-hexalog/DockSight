@@ -1,0 +1,25 @@
+{
+  "name": "@hexabuild/server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "NODE_OPTIONS=--disable-warning=ExperimentalWarning tsx watch src/index.ts",
+    "start": "NODE_OPTIONS=--disable-warning=ExperimentalWarning tsx src/index.ts",
+    "sync": "NODE_OPTIONS=--disable-warning=ExperimentalWarning tsx src/cli/sync.ts",
+    "diagnose": "NODE_OPTIONS=--disable-warning=ExperimentalWarning tsx src/cli/diagnose.ts",
+    "db:reset": "NODE_OPTIONS=--disable-warning=ExperimentalWarning tsx src/cli/resetDb.ts",
+    "typecheck": "tsc --noEmit",
+    "import": "NODE_OPTIONS=--disable-warning=ExperimentalWarning tsx src/cli/importExport.ts"
+  },
+  "dependencies": {
+    "@hexabuild/shared": "*",
+    "express": "^5.1.0",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.0.0",
+    "tsx": "^4.20.0",
+    "typescript": "~5.9.2"
+  }
+}
