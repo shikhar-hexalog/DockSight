@@ -46,6 +46,13 @@ import type {
   SyncKind,
   SyncStatusResponse,
   TatReportResponse,
+  ManifestDetailResponse,
+  ManifestsResponse,
+  QcLookupResponse,
+  QcRecentResponse,
+  QcRecord,
+  QcSubmit,
+  QcCheckResponse,
 } from '@hexabuild/shared';
 
 export class ApiRequestError extends Error {
@@ -226,6 +233,18 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ mimeType, imageBase64 }),
     }),
+
+  manifests: () => request<ManifestsResponse>('/manifests'),
+
+  manifest: (id: string) => request<ManifestDetailResponse>(`/manifests/${encodeURIComponent(id)}`),
+
+  qcLookup: (code: string) => request<QcLookupResponse>(`/qc/lookup${toQuery({ code })}`),
+
+  qcRecent: () => request<QcRecentResponse>('/qc/recent'),
+
+  submitQc: (input: QcSubmit) => request<QcRecord>('/qc', { method: 'POST', body: JSON.stringify(input) }),
+
+  qcCheck: (returnId: string, photo: string) => request<QcCheckResponse>('/qc/check', { method: 'POST', body: JSON.stringify({ returnId, photo }) }),
 
   syncStatus: () => request<SyncStatusResponse>('/sync/status'),
 

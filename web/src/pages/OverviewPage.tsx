@@ -12,6 +12,7 @@ import { useBriefs, useOverview } from '@/hooks/queries';
 import { useHoursFormatter } from '@/hooks/useClock';
 import { formatCount, formatRelative } from '@/lib/format';
 import { movementLink } from '@/hooks/useMovementFilter';
+import { BOARD_ALL_DATES } from '@/hooks/useScope';
 import { EXPLAIN } from '@/lib/explanations';
 import { cn } from '@/lib/utils';
 import { routes } from '@/routes';
@@ -36,7 +37,7 @@ function tilesFor(o: OverviewResponse): Tile[] {
       info: EXPLAIN.expected,
       value: formatCount(o.expected.total),
       hint: 'On the way, not at our dock yet',
-      to: routes.board,
+      to: `${routes.board}${BOARD_ALL_DATES}`,
     },
     {
       label: 'Arrived at dock today',
@@ -58,7 +59,7 @@ function tilesFor(o: OverviewResponse): Tile[] {
       info: EXPLAIN.manifested,
       value: formatCount(o.manifested.total),
       hint: 'In Uniware, putaway not closed yet',
-      to: routes.board,
+      to: `${routes.board}${BOARD_ALL_DATES}`,
     },
     {
       label: 'Closed today',

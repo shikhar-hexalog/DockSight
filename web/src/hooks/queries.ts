@@ -29,6 +29,9 @@ export const queryKeys = {
   holds: ['holds'] as const,
   aiStatus: ['ai-status'] as const,
   briefs: ['briefs'] as const,
+  manifests: ['manifests'] as const,
+  manifest: (id: string) => ['manifest', id] as const,
+  qcRecent: ['qc-recent'] as const,
 };
 
 const BRIEFS_REFRESH_MS = 60_000;
@@ -236,4 +239,42 @@ export function useDispatchReport(scope: ScopeFilters) {
     refetchInterval: REPORT_REFRESH_MS,
     placeholderData: previous => previous,
   });
+}
+
+export function useManifests() {
+  return useQuery({ queryKey: queryKeys.manifests, queryFn: api.manifests, refetchInterval: LIVE_REFRESH_MS });
+}
+
+export function useManifest(id: string | null) {
+  return useQuery({
+    queryKey: queryKeys.manifest(id ?? ''),
+    queryFn: () => api.manifest(id!),
+    enabled: id !== null,
+    refetchInterval: LIVE_REFRESH_MS,
+  });
+}
+
+export function useQcRecent() {
+  return useQuery({ queryKey: queryKeys.qcRecent, queryFn: api.qcRecent, refetchInterval: LIVE_REFRESH_MS });
+}
+
+export function useQcLookup() {
+  return useMutation({ mutationFn: api.qcLookup });
+}
+
+export function useSubmitQc() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: api.submitQc,
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.qcRecent });
+
+      void queryClient.invalidateQueries({ queryKey: ['manifest'] });
+    },
+  });
+}
+
+export function useQcCheck() {
+  return useMutation({ mutationFn: ({ returnId, photo }: { returnId: string; photo: string }) => api.qcCheck(returnId, photo) });
 }

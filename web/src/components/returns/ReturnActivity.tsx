@@ -21,6 +21,18 @@ function describe(event: ReturnEvent): string {
     return `${event.actor} took back a dock scan (${String(payload.code ?? '')})`;
   }
 
+  if (event.type === EventType.MANIFEST_ADDED) {
+    return `${event.actor} added it to a ${String(payload.courier ?? '')} return manifest`;
+  }
+
+  if (event.type === EventType.MANIFEST_REMOVED) {
+    return `${event.actor} took it out of a return manifest`;
+  }
+
+  if (event.type === EventType.QC_DONE) {
+    return `${event.actor} did QC, put on shelf ${String(payload.shelfCode ?? '')}`;
+  }
+
   if (event.type === EventType.SOURCE_UPDATED) {
     return `Updated in Uniware (${String(payload.sourceStatus ?? 'status unchanged')})`;
   }

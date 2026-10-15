@@ -1,10 +1,13 @@
 import {
   ArrowLeftRight,
   ChartColumn,
+  ClipboardCheck,
+  ClipboardList,
   Columns3,
   Hourglass,
   LayoutDashboard,
   MessageSquareText,
+  Milestone,
   type LucideIcon,
   PackageX,
   Rows3,
@@ -40,6 +43,8 @@ const NAV_GROUPS: NavGroup[] = [
       { to: routes.overview, label: 'Overview', icon: LayoutDashboard },
       { to: routes.board, label: 'Board', icon: Columns3 },
       { to: routes.receive, label: 'Receive', icon: ScanBarcode },
+      { to: routes.manifest, label: 'Manifests', icon: ClipboardList },
+      { to: routes.qc, label: 'QC', icon: ClipboardCheck },
       { to: routes.dispatch, label: 'Dispatch', icon: Truck, count: o => o.dispatch.open },
       { to: routes.pending, label: 'Pending in Uniware', icon: Hourglass, count: o => o.pending.total },
       { to: routes.exceptions, label: 'Set aside', icon: PackageX, count: o => o.exceptionsOpen },
@@ -54,14 +59,16 @@ const NAV_GROUPS: NavGroup[] = [
       { to: routes.sync, label: 'Uniware sync', icon: ArrowLeftRight },
     ],
   },
+  {
+    label: 'Future plan',
+    items: [{ to: routes.roadmap, label: 'Roadmap', icon: Milestone }],
+  },
 ];
 
 function Brand() {
   return (
     <div className="flex items-center gap-2.5 px-2">
-      <div className="grid size-7 place-items-center rounded-md bg-foreground font-mono text-[13px] font-semibold text-background">
-        H
-      </div>
+      <div className="grid size-7 place-items-center rounded-md bg-foreground font-mono text-[13px] font-semibold text-background">H</div>
 
       <div className="leading-tight">
         <div className="text-[13px] font-semibold">Hexalog</div>
