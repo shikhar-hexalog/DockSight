@@ -3,11 +3,11 @@ import { Link } from 'react-router';
 
 import { BATCH_UNSIGNED_WARN_HOURS, BRIEF_KIND_LABEL, MovementKind, type OverviewResponse, STAGE_LABEL, Stage } from '@hexabuild/shared';
 
+import { Explained } from '@/components/common/Explained';
 import { QueryError } from '@/components/common/QueryError';
 import { ClockToggle } from '@/components/layout/ClockToggle';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useBriefs, useOverview } from '@/hooks/queries';
 import { useHoursFormatter } from '@/hooks/useClock';
 import { movementLink } from '@/hooks/useMovementFilter';
@@ -17,19 +17,6 @@ import { cn } from '@/lib/utils';
 import { routes } from '@/routes';
 
 const dayFormat = new Intl.DateTimeFormat('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
-
-/** A label that explains itself on hover, without an (i) icon beside it. */
-function Explained({ text, children }: { text: string; children: ReactNode }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span className="cursor-help">{children}</span>
-      </TooltipTrigger>
-
-      <TooltipContent className="max-w-xs text-xs leading-relaxed">{text}</TooltipContent>
-    </Tooltip>
-  );
-}
 
 interface Attention {
   count: number;

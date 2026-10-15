@@ -4,7 +4,7 @@ import { Bar, BarChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from 'rec
 
 import { ClockMode, type ScopeFilters, TIME_LEGS, TIME_LEG_LABEL, type TatDay, type TatReportResponse, TimeLeg } from '@hexabuild/shared';
 
-import { InfoTip } from '@/components/common/InfoTip';
+import { Explained } from '@/components/common/Explained';
 import { QueryError } from '@/components/common/QueryError';
 import { DispatchPanel } from '@/components/reports/Dispatch';
 import { InwardPanel } from '@/components/reports/Inward';
@@ -45,14 +45,13 @@ const hours = (value: number | null) => (value === null ? '—' : `${value}h`);
 
 function Panel({ title, info, description, children }: { title: string; info: string; description: string; children: ReactNode }) {
   return (
-    <section className="flex flex-col gap-4 rounded-xl border p-5">
-      <div>
-        <h2 className="flex items-center gap-1.5 text-sm font-medium">
-          {title}
-          <InfoTip text={info} />
+    <section className="flex flex-col gap-4">
+      <div className="border-b border-ink pb-2">
+        <h2 className="font-display text-[16px] font-semibold tracking-[-0.01em] text-ink">
+          <Explained text={info}>{title}</Explained>
         </h2>
 
-        <p className="text-xs text-muted-foreground">{description}</p>
+        <p className="mt-1 text-[12.5px] text-muted-foreground">{description}</p>
       </div>
 
       {children}
@@ -179,7 +178,7 @@ function ReportBody({ scope }: { scope: ScopeFilters }) {
   }
 
   return (
-    <div className="grid min-h-0 flex-1 content-start gap-4 overflow-y-auto p-6 lg:grid-cols-2">
+    <div className="grid min-h-0 flex-1 content-start gap-x-14 gap-y-12 overflow-y-auto px-8 pt-2 pb-10 lg:grid-cols-2">
       <div className="lg:col-span-2">
         <Panel
           title="Inward by day"

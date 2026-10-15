@@ -1,12 +1,9 @@
-import { RefreshCw } from 'lucide-react';
 import { Link } from 'react-router';
 
-import { SyncKind, SyncStatus, type SyncStatusResponse } from '@hexabuild/shared';
+import { SyncStatus, type SyncStatusResponse } from '@hexabuild/shared';
 
-import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { useRunSync, useSyncStatus } from '@/hooks/queries';
+import { useSyncStatus } from '@/hooks/queries';
 import { formatRelative } from '@/lib/format';
 import { routes } from '@/routes';
 
@@ -17,7 +14,7 @@ function SyncLabel({ status }: { status: SyncStatusResponse }) {
     return (
       <span className="flex items-center gap-1.5">
         <Spinner className="size-3" />
-        Syncing with Uniware
+        Syncing now
       </span>
     );
   }
@@ -29,37 +26,17 @@ function SyncLabel({ status }: { status: SyncStatusResponse }) {
   return <span>Synced {formatRelative(status.lastSuccessAt)}</span>;
 }
 
+/** When returns were last copied from Uniware. Opens the sync page, where a sync can be run by hand. */
 export function SyncIndicator() {
   const { data } = useSyncStatus();
-
-  const runSync = useRunSync();
 
   if (!data) {
     return null;
   }
 
   return (
-    <div className="flex items-center gap-1">
-      <Link to={routes.sync} className="text-[12.5px] text-sidebar-foreground transition-colors hover:text-white">
-        <SyncLabel status={data} />
-      </Link>
-
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            size="icon-sm"
-            variant="ghost"
-            className="size-6 text-sidebar-foreground hover:bg-sidebar-accent hover:text-white"
-            aria-label="Sync now"
-            disabled={data.running || runSync.isPending}
-            onClick={() => runSync.mutate(SyncKind.INCREMENTAL)}
-          >
-            <RefreshCw className="size-3.5" />
-          </Button>
-        </TooltipTrigger>
-
-        <TooltipContent>Sync now</TooltipContent>
-      </Tooltip>
-    </div>
+    <Link to={routes.sync} className="text-[12.5px] text-sidebar-foreground transition-colors hover:text-white">
+      <SyncLabel status={data} />
+    </Link>
   );
 }

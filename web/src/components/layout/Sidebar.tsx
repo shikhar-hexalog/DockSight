@@ -102,9 +102,9 @@ function NavSection({ group }: { group: NavGroup }) {
 }
 
 const SOURCE_LABEL: Record<UniwareMode, string> = {
-  [UniwareMode.LIVE]: 'Uniware live',
-  [UniwareMode.MOCK]: 'Mock data',
-  [UniwareMode.IMPORT]: 'Uniware export',
+  [UniwareMode.LIVE]: 'Connected to Uniware',
+  [UniwareMode.MOCK]: 'Showing sample data',
+  [UniwareMode.IMPORT]: 'Using a Uniware export',
 };
 
 function Source() {
@@ -114,13 +114,17 @@ function Source() {
     return null;
   }
 
-  const facilities = (data.accounts ?? []).map(a => a.facility).join(' · ');
+  const facilities = (data.accounts ?? []).map(a => a.facility);
 
   return (
     <div className="flex flex-col gap-0.5 border-t border-sidebar-border pt-4">
       <p className={cn('text-[13px] font-medium', data.mode === UniwareMode.LIVE ? 'text-white' : 'text-signal')}>{SOURCE_LABEL[data.mode]}</p>
 
-      {facilities && <p className="text-[12.5px] text-sidebar-foreground">{facilities}</p>}
+      {facilities.length > 0 && (
+        <p className="text-[12.5px] text-sidebar-foreground">
+          {facilities.length === 1 ? 'Facility' : 'Facilities'}: {facilities.join(', ')}
+        </p>
+      )}
 
       <SyncIndicator />
     </div>

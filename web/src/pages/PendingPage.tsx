@@ -4,7 +4,7 @@ import { MS_PER_HOUR, RETURN_TYPE_LABEL, ReceivedSource, ReturnSort, type Return
 
 import { Mono } from '@/components/common/Mono';
 import { QueryError } from '@/components/common/QueryError';
-import { ClockToggle } from '@/components/layout/ClockToggle';
+import { ClockFilter, FilterBar } from '@/components/filters/FilterBar';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { SearchBox } from '@/components/returns/SearchBox';
 import { TypeFilter } from '@/components/returns/TypeFilter';
@@ -44,7 +44,7 @@ function waitTone(late: boolean, ms: number): string {
 function Waiting({ receivedAt }: { receivedAt: string }) {
   const age = useStageAge(Stage.RECEIVED, receivedAt);
 
-  return <span className={cn('font-mono text-[12px] tabular-nums', waitTone(age.late, age.ms))}>{age.label}</span>;
+  return <span className={cn('font-mono text-[12.5px] tabular-nums', waitTone(age.late, age.ms))}>{age.label}</span>;
 }
 
 function WaitingCell({ receivedAt }: { receivedAt: string | null }) {
@@ -59,24 +59,24 @@ function PendingRow({ summary }: { summary: ReturnSummary }) {
   const { open } = useReturnSheet();
 
   return (
-    <TableRow className="cursor-pointer text-[13px]" onClick={() => open(summary.id)}>
-      <TableCell>
+    <TableRow className="cursor-pointer text-[13.5px] hover:bg-muted/70" onClick={() => open(summary.id)}>
+      <TableCell className="pl-0">
         <WaitingCell receivedAt={summary.receivedAt} />
       </TableCell>
 
       <TableCell>
-        <Mono>{summary.trackingNumber ?? '—'}</Mono>
+        <Mono className="text-[12.5px] text-ink">{summary.trackingNumber ?? '—'}</Mono>
       </TableCell>
 
       <TableCell>
-        <Mono className="font-medium">{summary.sourceCode}</Mono>
+        <Mono className="text-[12.5px] text-ink">{summary.sourceCode}</Mono>
       </TableCell>
 
       <TableCell>{RETURN_TYPE_LABEL[summary.type]}</TableCell>
 
       <TableCell className="text-muted-foreground">{summary.courier ?? '—'}</TableCell>
 
-      <TableCell className="font-mono text-[12px] text-muted-foreground tabular-nums">{formatDateTime(summary.receivedAt)}</TableCell>
+      <TableCell className="whitespace-nowrap text-muted-foreground tabular-nums">{formatDateTime(summary.receivedAt)}</TableCell>
 
       <TableCell className="text-muted-foreground">{summary.receivedSource ? SOURCE_LABEL[summary.receivedSource] : '—'}</TableCell>
 
@@ -84,7 +84,7 @@ function PendingRow({ summary }: { summary: ReturnSummary }) {
         <Mono className="text-muted-foreground">{summary.sourceStatus ?? '—'}</Mono>
       </TableCell>
 
-      <TableCell className="max-w-[220px] truncate text-muted-foreground">{summary.firstItemName ?? '—'}</TableCell>
+      <TableCell className="max-w-[220px] truncate pr-0 text-muted-foreground">{summary.firstItemName ?? '—'}</TableCell>
     </TableRow>
   );
 }
@@ -92,10 +92,10 @@ function PendingRow({ summary }: { summary: ReturnSummary }) {
 function PendingTable({ rows }: { rows: ReturnSummary[] }) {
   return (
     <Table>
-      <TableHeader className="sticky top-0 z-10 bg-background">
+      <TableHeader className="sticky top-0 z-10 bg-background [&_tr]:border-ink">
         <TableRow className="hover:bg-transparent">
           {COLUMNS.map(column => (
-            <TableHead key={column} className="h-9 text-xs font-medium text-muted-foreground">
+            <TableHead key={column} className="h-9 text-[12.5px] font-normal text-muted-foreground first:pl-0 last:pr-0">
               {column}
             </TableHead>
           ))}
@@ -113,10 +113,10 @@ function PendingTable({ rows }: { rows: ReturnSummary[] }) {
 
 function EmptyPending({ q }: { q: string | undefined }) {
   if (q) {
-    return <p className="p-10 text-center text-sm text-muted-foreground">No pending return matches "{q}".</p>;
+    return <p className="px-8 py-4 text-[13.5px] text-muted-foreground">No pending return matches "{q}".</p>;
   }
 
-  return <p className="p-10 text-center text-sm text-muted-foreground">Nothing is waiting on Uniware. Every received return is processed.</p>;
+  return <p className="px-8 py-4 text-[13.5px] text-muted-foreground">Nothing is waiting on Uniware. Every received return is processed.</p>;
 }
 
 function PendingBody({ q }: { q: string | undefined }) {
@@ -125,12 +125,12 @@ function PendingBody({ q }: { q: string | undefined }) {
   const { data, error, isPending, refetch } = useReturns({ stage: Stage.RECEIVED, type, q, sort: ReturnSort.STAGE_AGE, limit: PAGE_SIZE });
 
   if (isPending) {
-    return <Skeleton className="m-6 h-64" />;
+    return <Skeleton className="mx-8 mt-4 h-64" />;
   }
 
   if (error) {
     return (
-      <div className="p-6">
+      <div className="px-8 py-4">
         <QueryError error={error} onRetry={() => void refetch()} />
       </div>
     );
@@ -142,11 +142,11 @@ function PendingBody({ q }: { q: string | undefined }) {
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
-      <p className="px-6 pt-3 text-xs text-muted-foreground">
+      <p className="px-8 pb-2 text-[12.5px] text-muted-foreground">
         {formatCount(data.total)} returns at the warehouse, not yet processed in Uniware. Oldest first.
       </p>
 
-      <div className="px-3">
+      <div className="px-8 pb-6">
         <PendingTable rows={data.data} />
       </div>
     </div>
@@ -162,21 +162,24 @@ export function PendingPage() {
         title="Pending in Uniware"
         description="Received at the warehouse but not yet processed in Uniware. This is the gap nobody could see before."
         actions={
+          <Button asChild size="sm" variant="outline">
+            <a href={exportUrls.pending}>
+              <Download />
+              Export
+            </a>
+          </Button>
+        }
+      />
+
+      <FilterBar
+        filters={
           <>
             <SearchBox value={search.text} onChange={search.setText} className="w-64" />
 
-            <ClockToggle />
-
             <TypeFilter />
-
-            <Button asChild size="sm" variant="outline">
-              <a href={exportUrls.pending}>
-                <Download />
-                Export
-              </a>
-            </Button>
           </>
         }
+        settings={<ClockFilter />}
       />
 
       <PendingBody q={search.q} />

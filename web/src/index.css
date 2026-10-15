@@ -105,6 +105,8 @@
     /* Chart series: validated categorical slots 1-2 (blue, orange) for CVD separation. */
     --series-1: #2a78d6;
     --series-2: #eb6834;
+    /* One-series charts: the logo cube's purple, passes the dataviz lightness/contrast checks. */
+    --chart-mark: #5b34c9;
     --overdue: #c0262f;
     --ok: #2f7d5f;
     --sidebar: var(--ink);

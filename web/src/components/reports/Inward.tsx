@@ -4,7 +4,7 @@
 
 import { Download } from 'lucide-react';
 import { useState } from 'react';
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, LabelList, XAxis, YAxis } from 'recharts';
 
 import {
   type LegStats,
@@ -17,6 +17,7 @@ import {
   TimeLeg,
 } from '@hexabuild/shared';
 
+import { Explained } from '@/components/common/Explained';
 import { InfoTip } from '@/components/common/InfoTip';
 import { QueryError } from '@/components/common/QueryError';
 import { ReturnsTable } from '@/components/returns/ReturnsTable';
@@ -38,7 +39,7 @@ import { cn } from '@/lib/utils';
 const LIST_LIMIT = 200;
 
 const backlogConfig = {
-  pending: { label: 'Waiting for Uniware at end of day', color: 'var(--series-2)' },
+  pending: { label: 'Waiting for Uniware at end of day', color: 'var(--chart-mark)' },
 } satisfies ChartConfig;
 
 const shortDay = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short' });
@@ -98,23 +99,57 @@ function countOf(day: TatDay, part: InwardPart): number {
   return day.received.total;
 }
 
+/** Only the latest day and the peak get a number on their column; the tooltip carries the rest. */
+function labelledDays(data: { pending: number }[]): Set<number> {
+  const last = data.length - 1;
+
+  const peak = data.reduce((best, d, i) => (d.pending > data[best].pending ? i : best), 0);
+
+  return new Set([last, peak].filter(i => i >= 0 && data[i].pending > 0));
+}
+
+// End-of-day counts are separate snapshots, so one column per day, not a smoothed area.
 function BacklogChart({ days }: { days: MovementDay[] }) {
   const data = days.map(d => ({ day: shortDay.format(dayDate(d.day)), pending: d.pendingAtClose }));
 
+  const labelled = labelledDays(data);
+
   return (
-    <ChartContainer config={backlogConfig} className="h-32 w-full">
-      <AreaChart data={data} margin={{ top: 8, left: 0, right: 8 }}>
-        <CartesianGrid vertical={false} strokeOpacity={0.5} />
+    <ChartContainer config={backlogConfig} className="h-48 w-full">
+      <BarChart data={data} margin={{ top: 20, left: 0, right: 0 }} barCategoryGap={2}>
+        <CartesianGrid vertical={false} stroke="var(--border)" />
 
-        <XAxis dataKey="day" tickLine={false} axisLine={false} tickMargin={8} minTickGap={16} />
+        <XAxis dataKey="day" tickLine={false} axisLine={{ stroke: 'var(--ink)' }} tickMargin={8} minTickGap={16} />
 
-        <YAxis tickLine={false} axisLine={false} allowDecimals={false} width={48} tickFormatter={value => formatCount(Number(value))} />
+        <YAxis
+          tickLine={false}
+          axisLine={false}
+          allowDecimals={false}
+          width={40}
+          tickCount={4}
+          tickFormatter={value => formatCount(Number(value))}
+        />
 
-        <ChartTooltip content={<ChartTooltipContent />} />
+        <ChartTooltip cursor={{ fill: 'var(--muted)' }} content={<ChartTooltipContent className="min-w-64 gap-2" />} />
 
-        <Area dataKey="pending" type="monotone" stroke="var(--color-pending)" fill="var(--color-pending)" fillOpacity={0.15} strokeWidth={2} />
-      </AreaChart>
+        <Bar dataKey="pending" fill="var(--color-pending)" radius={[4, 4, 0, 0]} maxBarSize={22}>
+          <LabelList
+            dataKey="pending"
+            position="top"
+            content={props => (labelled.has(Number(props.index)) ? <LabelText {...props} /> : null)}
+          />
+        </Bar>
+      </BarChart>
     </ChartContainer>
+  );
+}
+
+/** The value on a column's cap, in ink (text never wears the series colour). */
+function LabelText({ x, y, width, value }: { x?: number | string; y?: number | string; width?: number | string; value?: unknown }) {
+  return (
+    <text x={Number(x) + Number(width) / 2} y={Number(y) - 6} textAnchor="middle" className="fill-ink text-[12px] font-semibold tabular-nums">
+      {formatCount(Number(value))}
+    </text>
   );
 }
 
@@ -122,14 +157,13 @@ function Backlog({ scope }: { scope: ScopeFilters }) {
   const { data } = useMovements(scope);
 
   if (!data) {
-    return <Skeleton className="h-32" />;
+    return <Skeleton className="h-48" />;
   }
 
   return (
     <div>
-      <h3 className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-        At the dock, waiting for Uniware, at the end of each day
-        <InfoTip text={EXPLAIN.pendingAtClose} />
+      <h3 className="text-[13px] text-muted-foreground">
+        <Explained text={EXPLAIN.pendingAtClose}>At the dock, waiting for Uniware, at the end of each day</Explained>
       </h3>
 
       <BacklogChart days={data.days} />

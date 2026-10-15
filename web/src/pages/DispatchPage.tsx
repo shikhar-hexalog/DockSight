@@ -43,28 +43,28 @@ const RESULT_LOOK: Record<HandoverResult, ResultLook> = {
     icon: OctagonX,
     title: 'STOP: do not hand over',
     instruction: 'This order was cancelled. Take the parcel out of the handover pile.',
-    card: 'border-overdue bg-overdue text-white',
+    card: 'bg-overdue text-white',
     text: 'text-white',
   },
   [HandoverResult.CLEAR]: {
     icon: CircleCheck,
     title: 'OK to hand over',
     instruction: 'No cancellation known for this parcel.',
-    card: 'border-ok/40 bg-ok/10',
+    card: 'bg-ok text-white',
     text: 'text-ok',
   },
   [HandoverResult.ALREADY_PULLED]: {
     icon: Repeat,
     title: 'Already pulled out',
     instruction: 'This parcel was stopped before. Keep it out of the handover pile.',
-    card: 'border-warn/50 bg-warn/10',
+    card: 'bg-signal text-ink',
     text: 'text-warn',
   },
   [HandoverResult.INVALID]: {
     icon: ShieldAlert,
     title: "Couldn't check this scan",
     instruction: 'Scan it again, or check the order in Uniware before handing it over.',
-    card: 'border-overdue/40 bg-overdue/10',
+    card: 'bg-overdue text-white',
     text: 'text-overdue',
   },
 };
@@ -86,11 +86,11 @@ function HoldFacts({ hold }: { hold: DispatchHold | null }) {
 
 function CheckingCard({ code }: { code: string }) {
   return (
-    <div className="flex min-h-40 items-center gap-5 rounded-xl border-2 p-5">
+    <div className="flex min-h-40 items-center gap-5 rounded-sm bg-muted p-6">
       <Spinner className="size-10 shrink-0" />
 
       <div className="flex flex-col gap-1">
-        <h2 className="text-2xl font-semibold tracking-tight">Checking…</h2>
+        <h2 className="font-display text-[28px] font-semibold tracking-[-0.02em] text-ink">Checking…</h2>
 
         <Mono className="text-base text-muted-foreground">{code}</Mono>
 
@@ -102,12 +102,12 @@ function CheckingCard({ code }: { code: string }) {
 
 function OfflineClearCard({ code }: { code: string }) {
   return (
-    <div className="flex min-h-40 gap-5 rounded-xl border-2 border-warn/50 bg-warn/10 p-5">
-      <CloudOff className="size-14 shrink-0 text-warn" strokeWidth={1.75} />
+    <div className="flex min-h-40 gap-5 rounded-sm bg-signal p-6 text-ink">
+      <CloudOff className="size-14 shrink-0" strokeWidth={1.75} />
 
       <div className="flex flex-col gap-2">
         <div className="flex flex-wrap items-baseline gap-x-3">
-          <h2 className="text-2xl font-semibold tracking-tight">OK, based on the last known holds</h2>
+          <h2 className="font-display text-[28px] font-semibold tracking-[-0.02em]">OK, based on the last known holds</h2>
 
           <Mono className="text-base opacity-80">{code}</Mono>
         </div>
@@ -130,9 +130,7 @@ function CheckResultCard({ entry, offline }: { entry: HandoverEntry | undefined;
 
   if (!entry) {
     return (
-      <div className="grid min-h-40 place-items-center rounded-xl border-2 border-dashed text-muted-foreground">
-        Scan each parcel before it goes to the courier
-      </div>
+      <p className="py-6 text-[17px] text-muted-foreground">Scan each parcel before it goes to the courier</p>
     );
   }
 
@@ -141,12 +139,12 @@ function CheckResultCard({ entry, offline }: { entry: HandoverEntry | undefined;
   const Icon = look.icon;
 
   return (
-    <div key={`${entry.check.id}-${entry.result}`} className={cn('flex min-h-40 gap-5 rounded-xl border-2 p-5 animate-in fade-in-0', look.card)}>
-      <Icon className={cn('size-14 shrink-0', look.text)} strokeWidth={1.75} />
+    <div key={`${entry.check.id}-${entry.result}`} className={cn('flex min-h-40 gap-5 rounded-sm p-6 animate-in fade-in-0', look.card)}>
+      <Icon className="size-14 shrink-0" strokeWidth={1.75} />
 
       <div className="flex min-w-0 flex-col gap-2">
         <div className="flex flex-wrap items-baseline gap-x-3">
-          <h2 className="text-2xl font-semibold tracking-tight">{look.title}</h2>
+          <h2 className="font-display text-[28px] font-semibold tracking-[-0.02em]">{look.title}</h2>
 
           <Mono className="text-base opacity-80">{entry.check.code}</Mono>
         </div>
@@ -165,7 +163,7 @@ function QueueNote({ queued }: { queued: number }) {
   }
 
   return (
-    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+    <span className="flex items-center gap-1.5 text-[13px] text-warn">
       <CloudOff className="size-3.5" />
       {formatCount(queued)} checks saved here, will sync. Answers use the last known holds.
     </span>
@@ -238,7 +236,7 @@ function RemoveCheckButton({ entry, onRemove }: { entry: HandoverEntry; onRemove
           onRemove(entry.check.id);
         }
       }}
-      className="inline-flex size-7 items-center justify-center rounded-md border text-muted-foreground transition hover:border-overdue/60 hover:bg-overdue/5 hover:text-overdue"
+      className="inline-flex size-7 items-center justify-center rounded-sm text-muted-foreground transition hover:bg-overdue/10 hover:text-overdue"
     >
       <Trash2 className="size-3.5" />
     </button>
@@ -278,15 +276,15 @@ function CheckRow({ entry, onRemove }: { entry: HandoverEntry; onRemove: (id: st
 /** This pickup's scans, newest first, each removable. */
 function CheckLog({ entries, onRemove }: { entries: HandoverEntry[]; onRemove: (id: string) => void }) {
   if (entries.length === 0) {
-    return <p className="py-8 text-center text-sm text-muted-foreground">Parcels scanned for this pickup will appear here.</p>;
+    return <p className="py-4 text-[13.5px] text-muted-foreground">Parcels scanned for this pickup will appear here.</p>;
   }
 
   return (
     <Table>
-      <TableHeader>
+      <TableHeader className="[&_tr]:border-ink">
         <TableRow className="hover:bg-transparent">
           {['Time', 'Scanned', 'Result', 'Cancelled order', 'By', '', ''].map((column, index) => (
-            <TableHead key={index} className="h-9 text-xs font-medium text-muted-foreground">
+            <TableHead key={index} className="h-9 text-[12.5px] font-normal text-muted-foreground first:pl-0">
               {column}
             </TableHead>
           ))}
@@ -308,14 +306,14 @@ function PickupCounts({ entries, queued }: { entries: HandoverEntry[]; queued: n
   const heldBack = entries.filter(e => HELD_BACK.includes(e.result)).length;
 
   return (
-    <div className="flex items-center gap-1.5">
-      <span className="flex items-baseline gap-1 rounded-md bg-background px-2 py-0.5 text-xs text-muted-foreground">
-        <span className="font-mono text-sm font-semibold text-foreground tabular-nums">{formatCount(handedOver)}</span>
+    <div className="flex items-baseline gap-4">
+      <span className="flex items-baseline gap-1 text-[13px] text-muted-foreground">
+        <span className="font-semibold text-ink tabular-nums">{formatCount(handedOver)}</span>
         cleared
       </span>
 
-      <span className="flex items-baseline gap-1 rounded-md bg-background px-2 py-0.5 text-xs text-muted-foreground">
-        <span className={cn('font-mono text-sm font-semibold text-foreground tabular-nums', heldBack > 0 && 'text-overdue')}>
+      <span className="flex items-baseline gap-1 text-[13px] text-muted-foreground">
+        <span className={cn('font-semibold text-ink tabular-nums', heldBack > 0 && 'text-overdue')}>
           {formatCount(heldBack)}
         </span>
         held back
@@ -338,7 +336,7 @@ function HandoverPanel({ handover }: { handover: Handover }) {
   const cleared = batchEntries.filter(e => HANDED_OVER.includes(e.result)).length;
 
   return (
-    <section className="flex flex-col gap-3">
+    <section className="flex flex-col gap-4">
       <BatchBar
         kind={BatchKind.DISPATCH}
         batch={dispatchBatch}
@@ -382,14 +380,14 @@ function HoldRow({ hold }: { hold: DispatchHold }) {
   return (
     <li className="flex items-center gap-3 py-2.5">
       <div className="min-w-0 flex-1">
-        <Mono className="text-[13px] font-medium">{hold.trackingNumber ?? hold.packageCode}</Mono>
+        <Mono className="text-[13px] font-medium text-ink">{hold.trackingNumber ?? hold.packageCode}</Mono>
 
-        <p className="truncate text-xs text-muted-foreground">
+        <p className="truncate text-[12.5px] text-muted-foreground">
           {hold.saleOrderCode} · {hold.courier ?? 'Unknown courier'} · {hold.firstItemName ?? 'Item'}
         </p>
       </div>
 
-      <span className="font-mono text-[11px] whitespace-nowrap text-overdue tabular-nums">cancelled {formatAge(hold.cancelledAt)} ago</span>
+      <span className="font-mono text-[12px] whitespace-nowrap text-overdue tabular-nums">cancelled {formatAge(hold.cancelledAt)} ago</span>
 
       <PullButton hold={hold} />
     </li>
@@ -412,21 +410,18 @@ function PullList({ holds }: { holds: DispatchHold[] }) {
 
   if (open.length === 0) {
     return (
-      <div className="flex items-center gap-2 rounded-xl border p-5 text-sm text-muted-foreground">
-        <CircleCheck className="size-4 text-ok" />
-        Nothing to pull. No cancelled orders are waiting on a manifest.
-      </div>
+      <p className="py-3 text-[13.5px] text-muted-foreground">Nothing to pull. No cancelled orders are waiting on a manifest.</p>
     );
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-5">
       {groupByManifest(open).map(([manifest, group]) => (
-        <section key={manifest} className="rounded-xl border border-overdue/40 px-4 py-2">
-          <div className="flex items-baseline justify-between border-b py-2">
-            <Mono className="text-[13px] font-semibold">{manifest}</Mono>
+        <section key={manifest}>
+          <div className="flex items-baseline justify-between border-b border-overdue pb-1.5">
+            <Mono className="text-[13px] font-semibold text-ink">{manifest}</Mono>
 
-            <span className="text-xs text-overdue">{formatCount(group.length)} to pull out</span>
+            <span className="text-[12.5px] font-medium text-overdue">{formatCount(group.length)} to pull out</span>
           </div>
 
           <ul className="divide-y">
@@ -451,7 +446,7 @@ function DoneRow({ hold }: { hold: DispatchHold }) {
       <li className="flex items-center justify-between gap-3 py-2 text-[13px]">
         <Mono>{hold.trackingNumber ?? hold.packageCode}</Mono>
 
-        <span className="text-xs text-ok">
+        <span className="text-[12.5px] text-ok">
           Pulled by {hold.pulledBy}
           {hold.pulledVia ? `, ${PULLED_VIA_LABEL[hold.pulledVia]}` : ''}
         </span>
@@ -463,7 +458,7 @@ function DoneRow({ hold }: { hold: DispatchHold }) {
     <li className="flex items-center justify-between gap-3 py-2 text-[13px]">
       <Mono>{hold.trackingNumber ?? hold.packageCode}</Mono>
 
-      <span className="text-xs text-overdue">Handed over anyway {formatDateTime(hold.missedAt)} · RTO coming</span>
+      <span className="text-[12.5px] text-overdue">Handed over anyway {formatDateTime(hold.missedAt)} · RTO coming</span>
     </li>
   );
 }
@@ -476,8 +471,8 @@ function TodayDone({ holds }: { holds: DispatchHold[] }) {
   }
 
   return (
-    <section className="rounded-xl border px-4 py-2">
-      <h3 className="border-b py-2 text-sm font-medium">Today</h3>
+    <section>
+      <h3 className="border-b pb-1.5 text-[13px] font-medium text-muted-foreground">Today</h3>
 
       <ul className="divide-y">
         {done.map(hold => (
@@ -490,8 +485,8 @@ function TodayDone({ holds }: { holds: DispatchHold[] }) {
 
 function PullPanel({ holds }: { holds: DispatchHold[] }) {
   return (
-    <section className="flex flex-col gap-4">
-      <h2 className="text-sm font-medium">Pull from manifests</h2>
+    <section className="flex flex-col gap-5">
+      <h2 className="border-b border-ink pb-2 font-display text-[16px] font-semibold text-ink">Pull from manifests</h2>
 
       <PullList holds={holds} />
 
@@ -520,7 +515,7 @@ function GuardStatusLine() {
   }
 
   return (
-    <Button size="sm" variant="ghost" className="text-xs text-muted-foreground" onClick={() => runGuard.mutate()}>
+    <Button size="sm" variant="ghost" className="text-[13px] text-muted-foreground" onClick={() => runGuard.mutate()}>
       <RefreshCw className={cn('size-3.5', runGuard.isPending && 'animate-spin')} />
       {label()}
     </Button>
@@ -531,7 +526,7 @@ function Totals() {
   const { data } = useOverview();
 
   if (!data) {
-    return <Spinner className="m-6" />;
+    return <Spinner className="mx-8 my-6" />;
   }
 
   const { open, pulledToday, missedToday } = data.dispatch;
@@ -543,12 +538,14 @@ function Totals() {
   ];
 
   return (
-    <div className="grid grid-cols-3 divide-x border-b">
+    <div className="mx-8 mt-2 grid grid-cols-3 border-t border-ink">
       {tiles.map(tile => (
-        <div key={tile.label} className="flex flex-col gap-1 px-6 py-4">
-          <span className="text-xs text-muted-foreground">{tile.label}</span>
+        <div key={tile.label} className="flex flex-col pt-3 pr-4">
+          <span className="text-[13px] text-muted-foreground">{tile.label}</span>
 
-          <span className={cn('text-3xl font-semibold tracking-tight tabular-nums', tile.tone)}>{formatCount(tile.value)}</span>
+          <span className={cn('font-display text-[40px] leading-[1.1] font-semibold tracking-[-0.04em] text-ink tabular-nums', tile.tone)}>
+            {formatCount(tile.value)}
+          </span>
         </div>
       ))}
     </div>
@@ -638,7 +635,7 @@ export function DispatchPage() {
       <div className="min-h-0 flex-1 overflow-y-auto">
         <Totals />
 
-        <div className="grid gap-6 p-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <div className="grid gap-10 px-8 pt-8 pb-8 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] xl:gap-14">
           <HandoverPanel handover={handover} />
 
           <PullPanel holds={handover.holds} />

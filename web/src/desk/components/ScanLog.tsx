@@ -158,15 +158,15 @@ interface ScanLogProps {
 
 export function ScanLog({ entries, selectedId, onSelect, onRemove }: ScanLogProps) {
   if (entries.length === 0) {
-    return <p className="py-10 text-center text-sm text-muted-foreground">This handover's scans will appear here. Click one to tag its condition.</p>;
+    return <p className="py-4 text-[13.5px] text-muted-foreground">This handover's scans will appear here. Click one to tag its condition.</p>;
   }
 
   return (
     <Table>
-      <TableHeader className="sticky top-0 z-10 bg-background">
+      <TableHeader className="sticky top-0 z-10 bg-background [&_tr]:border-ink">
         <TableRow className="hover:bg-transparent">
           {COLUMNS.map(column => (
-            <TableHead key={column} className="h-9 text-xs font-medium text-muted-foreground">
+            <TableHead key={column} className="h-9 text-[12.5px] font-normal text-muted-foreground first:pl-0">
               {column}
             </TableHead>
           ))}
