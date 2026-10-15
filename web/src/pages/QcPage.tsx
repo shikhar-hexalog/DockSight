@@ -190,6 +190,44 @@ function ExpectedStrip({ items }: { items: ReturnItem[] }) {
   );
 }
 
+/** Asked once at the start of QC; kept on this desk until changed. */
+function NameStep({ current, onName }: { current: string | null; onName: (name: string) => void }) {
+  const [name, setName] = useState(current ?? '');
+
+  function submit(event: FormEvent) {
+    event.preventDefault();
+
+    if (name.trim()) {
+      onName(name.trim());
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="flex flex-col gap-3 rounded-xl border-2 border-dashed border-stage-expected/40 p-5">
+      <p className="font-semibold">Who is doing QC?</p>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" autoFocus className="h-10 w-56" />
+
+        <Button type="submit" className="h-10 px-6" disabled={!name.trim()}>
+          Start QC
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+function QcBy({ name, onChange }: { name: string; onChange: () => void }) {
+  return (
+    <p className="text-xs text-muted-foreground">
+      QC by <span className="font-medium text-foreground">{name}</span> ·{' '}
+      <button type="button" onClick={onChange} className="underline-offset-4 hover:underline">
+        Change
+      </button>
+    </p>
+  );
+}
+
 function PhotoStep({ target, onPhoto, onSkip }: { target: QcReturn; onPhoto: (photo: string) => void; onSkip: () => void }) {
   return (
     <div className="flex flex-col gap-4 rounded-xl border-2 border-dashed border-stage-expected/40 p-5">
@@ -507,26 +545,24 @@ interface ManualStepProps {
   onRetry: (() => void) | null;
   photo: string | null;
   onGrade: (code: string, value: Grade) => void;
-  onSave: (qcBy: string, shelf: string | null) => void;
+  qcBy: string;
+  onChangeName: () => void;
+  onSave: (shelf: string | null) => void;
   saving: boolean;
 }
 
-function ManualStep({ target, grades, locked, check, aiNote, onRetry, photo, onGrade, onSave, saving }: ManualStepProps) {
-  const { scanner } = useDesk();
-
+function ManualStep({ target, grades, locked, check, aiNote, onRetry, photo, qcBy, onChangeName, onGrade, onSave, saving }: ManualStepProps) {
   const [shelf, setShelf] = useState('');
-
-  const [name, setName] = useState(scanner ?? '');
 
   const shelfCode = shelf.trim().toUpperCase();
 
-  const ready = Boolean(target.dockReceivedAt) && name.trim() !== '' && !missingReason(grades) && !saving;
+  const ready = Boolean(target.dockReceivedAt) && !missingReason(grades) && !saving;
 
   function submit(event: FormEvent) {
     event.preventDefault();
 
     if (ready) {
-      onSave(name.trim(), shelfCode || null);
+      onSave(shelfCode || null);
     }
   }
 
@@ -549,8 +585,6 @@ function ManualStep({ target, grades, locked, check, aiNote, onRetry, photo, onG
       ))}
 
       <div className="flex flex-wrap items-center gap-2">
-        <Input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" className="h-10 w-40" />
-
         <Input
           value={shelf}
           onChange={e => setShelf(e.target.value)}
@@ -563,13 +597,17 @@ function ManualStep({ target, grades, locked, check, aiNote, onRetry, photo, onG
         </Button>
       </div>
 
+      <QcBy name={qcBy} onChange={onChangeName} />
+
       <PayloadPreview payload={previewPayload(target, grades, shelfCode)} title="What Uniware would receive (dry run, not sent)" />
     </form>
   );
 }
 
 function QcFlow({ target, onDone }: { target: QcReturn; onDone: (record: QcRecord) => void }) {
-  const { setScanner } = useDesk();
+  const { scanner, setScanner } = useDesk();
+
+  const [changingName, setChangingName] = useState(false);
 
   const runCheck = useQcCheck();
 
@@ -635,11 +673,13 @@ function QcFlow({ target, onDone }: { target: QcReturn; onDone: (record: QcRecor
     setStep(Step.MANUAL);
   }
 
-  function save(qcBy: string, shelfCode: string | null) {
-    setScanner(qcBy);
+  function save(shelfCode: string | null) {
+    if (!scanner) {
+      return;
+    }
 
     submit.mutate(
-      { returnId: target.id, qcBy, shelfCode, items: toInputs(grades), photo, aiCheck: check },
+      { returnId: target.id, qcBy: scanner, shelfCode, items: toInputs(grades), photo, aiCheck: check },
       {
         onSuccess: record => {
           playSound(TONE_SOUND[OutcomeTone.GOOD]);
@@ -653,8 +693,27 @@ function QcFlow({ target, onDone }: { target: QcReturn; onDone: (record: QcRecor
     );
   }
 
+  if (!scanner || changingName) {
+    return (
+      <NameStep
+        current={scanner}
+        onName={name => {
+          setScanner(name);
+
+          setChangingName(false);
+        }}
+      />
+    );
+  }
+
   if (step === Step.PHOTO) {
-    return <PhotoStep target={target} onPhoto={onPhoto} onSkip={() => setStep(Step.MANUAL)} />;
+    return (
+      <div className="flex flex-col gap-2">
+        <PhotoStep target={target} onPhoto={onPhoto} onSkip={() => setStep(Step.MANUAL)} />
+
+        <QcBy name={scanner} onChange={() => setChangingName(true)} />
+      </div>
+    );
   }
 
   if (step === Step.CHECKING) {
@@ -674,6 +733,8 @@ function QcFlow({ target, onDone }: { target: QcReturn; onDone: (record: QcRecor
       aiNote={aiNote}
       onRetry={aiFailed && photo ? () => onPhoto(photo) : null}
       photo={photo}
+      qcBy={scanner}
+      onChangeName={() => setChangingName(true)}
       onGrade={(code, value) => setGrades(current => ({ ...current, [code]: value }))}
       onSave={save}
       saving={submit.isPending}
