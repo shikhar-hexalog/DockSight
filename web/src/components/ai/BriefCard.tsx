@@ -9,19 +9,10 @@ function Meta({ brief }: { brief: Brief }) {
   const delivery = brief.delivery ? ` · ${brief.delivery}` : '';
 
   return (
-    <p className="text-xs text-muted-foreground">
+    <p className="text-[12.5px] text-muted-foreground">
       {BRIEF_KIND_LABEL[brief.kind]} · {formatDateTime(brief.createdAt)} · {how}
       {delivery}
     </p>
-  );
-}
-
-function PriorityMark({ priority }: { priority: ActionPriority }) {
-  return (
-    <span
-      aria-label={priority === ActionPriority.HIGH ? 'Urgent' : undefined}
-      className={cn('mt-1.5 size-2 shrink-0 rounded-full', priority === ActionPriority.HIGH ? 'bg-overdue' : 'bg-border')}
-    />
   );
 }
 
@@ -30,7 +21,7 @@ function OwnerChip({ owner }: { owner: string | null }) {
     return null;
   }
 
-  return <span className="ml-2 rounded-[4px] border px-1.5 py-0.5 text-[11px] text-muted-foreground">{owner}</span>;
+  return <span className="font-normal text-muted-foreground"> · {owner}</span>;
 }
 
 function MockNote({ provider }: { provider: string }) {
@@ -38,7 +29,7 @@ function MockNote({ provider }: { provider: string }) {
     return null;
   }
 
-  return <p className="rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">Written in mock mode from fixed templates, not by the AI.</p>;
+  return <p className="text-[12.5px] text-warn">Written in mock mode from fixed templates, not by the AI.</p>;
 }
 
 /** A brief laid out for reading: headline, summary, sections, then actions. */
@@ -50,16 +41,16 @@ export function BriefCard({ brief }: { brief: Brief }) {
       <div className="flex flex-col gap-2">
         <Meta brief={brief} />
 
-        <h2 className="text-xl font-semibold tracking-tight text-balance">{content.headline}</h2>
+        <h2 className="font-display text-[24px] leading-[1.2] font-semibold tracking-[-0.03em] text-balance text-ink">{content.headline}</h2>
 
-        <p className="text-[14px] leading-relaxed text-muted-foreground">{content.summary}</p>
+        <p className="text-[15px] leading-relaxed text-muted-foreground">{content.summary}</p>
       </div>
 
       <MockNote provider={brief.provider} />
 
       {content.sections.map(section => (
         <section key={section.title} className="flex flex-col gap-2">
-          <h3 className="text-[11px] font-medium tracking-wider text-muted-foreground uppercase">{section.title}</h3>
+          <h3 className="border-b pb-1.5 font-display text-[14px] font-semibold text-ink">{section.title}</h3>
 
           <ul className="flex flex-col gap-1.5">
             {section.points.map(point => (
@@ -71,20 +62,21 @@ export function BriefCard({ brief }: { brief: Brief }) {
         </section>
       ))}
 
-      <section className="flex flex-col gap-2 rounded-lg border p-4">
-        <h3 className="text-[11px] font-medium tracking-wider text-muted-foreground uppercase">Next actions</h3>
+      <section className="flex flex-col gap-2">
+        <h3 className="border-b border-ink pb-1.5 font-display text-[14px] font-semibold text-ink">Next actions</h3>
 
-        <ol className="flex flex-col gap-2.5">
-          {content.actions.map(action => (
-            <li key={action.action} className="flex gap-2.5 text-[14px]">
-              <PriorityMark priority={action.priority} />
+        <ol className="flex flex-col">
+          {content.actions.map(action => {
+            const urgent = action.priority === ActionPriority.HIGH;
 
-              <span>
+            // Urgent actions in red and bold, not marked with a dot.
+            return (
+              <li key={action.action} aria-label={urgent ? `Urgent: ${action.action}` : undefined} className={cn('border-b py-2 text-[14px]', urgent && 'font-medium text-overdue')}>
                 {action.action}
                 <OwnerChip owner={action.owner} />
-              </span>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ol>
       </section>
     </article>

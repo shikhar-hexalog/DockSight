@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { type Receipt, SCAN_RESULT_LABEL } from '@hexabuild/shared';
 
 import { Mono } from '@/components/common/Mono';
+import { TextToggle } from '@/components/common/TextToggle';
 import { QueryError } from '@/components/common/QueryError';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,6 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useDesk } from '@/desk/DeskProvider';
 import { RESULT_STYLE } from '@/desk/scanResultStyle';
 import { useReceipts, useResolveReceipt } from '@/hooks/queries';
@@ -92,7 +92,7 @@ function ResolveDialog({ receipt, onClose }: { receipt: Receipt | null; onClose:
 function StatusCell({ receipt, onResolve }: { receipt: Receipt; onResolve: (receipt: Receipt) => void }) {
   if (receipt.resolvedAt) {
     return (
-      <span className="text-xs text-muted-foreground">
+      <span className="text-[12.5px] text-muted-foreground">
         Resolved by {receipt.resolvedBy}: {receipt.resolutionNote}
       </span>
     );
@@ -109,11 +109,11 @@ function ExceptionRow({ receipt, onResolve }: { receipt: Receipt; onResolve: (re
   const style = RESULT_STYLE[receipt.result];
 
   return (
-    <TableRow className="text-[13px]">
-      <TableCell className="font-mono text-[12px] whitespace-nowrap text-muted-foreground tabular-nums">{formatDateTime(receipt.scannedAt)}</TableCell>
+    <TableRow className="text-[13.5px]">
+      <TableCell className="pl-0 whitespace-nowrap text-muted-foreground tabular-nums">{formatDateTime(receipt.scannedAt)}</TableCell>
 
       <TableCell>
-        <Mono className="font-medium">{receipt.code}</Mono>
+        <Mono className="text-[12.5px] text-ink">{receipt.code}</Mono>
       </TableCell>
 
       <TableCell className={cn('font-medium', style.text)}>{SCAN_RESULT_LABEL[receipt.result]}</TableCell>
@@ -147,28 +147,28 @@ function ExceptionsTable({ view }: { view: View }) {
   const [resolving, setResolving] = useState<Receipt | null>(null);
 
   if (isPending) {
-    return <Skeleton className="m-6 h-64" />;
+    return <Skeleton className="mx-8 mt-4 h-64" />;
   }
 
   if (error) {
     return (
-      <div className="p-6">
+      <div className="px-8 py-4">
         <QueryError error={error} onRetry={() => void refetch()} />
       </div>
     );
   }
 
   if (data.data.length === 0) {
-    return <p className="p-10 text-center text-sm text-muted-foreground">No parcels set aside. Every scan matched an expected return.</p>;
+    return <p className="px-8 py-4 text-[13.5px] text-muted-foreground">No parcels set aside. Every scan matched an expected return.</p>;
   }
 
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto px-3">
+    <div className="min-h-0 flex-1 overflow-y-auto px-8 pt-2 pb-6">
       <Table>
-        <TableHeader className="sticky top-0 z-10 bg-background">
+        <TableHeader className="sticky top-0 z-10 bg-background [&_tr]:border-ink">
           <TableRow className="hover:bg-transparent">
             {COLUMNS.map(column => (
-              <TableHead key={column} className="h-9 text-xs font-medium text-muted-foreground">
+              <TableHead key={column} className="h-9 text-[12.5px] font-normal text-muted-foreground first:pl-0">
                 {column}
               </TableHead>
             ))}
@@ -196,15 +196,15 @@ export function ExceptionsPage() {
         title="Set aside"
         description="Parcels that didn't match an expected return, or whose return was cancelled. Each needs someone to act."
         actions={
-          <ToggleGroup type="single" size="sm" variant="outline" value={view} onValueChange={v => v && setView(v as View)}>
-            <ToggleGroupItem value={View.OPEN} className="px-3 text-xs">
-              Open
-            </ToggleGroupItem>
-
-            <ToggleGroupItem value={View.ALL} className="px-3 text-xs">
-              All
-            </ToggleGroupItem>
-          </ToggleGroup>
+          <TextToggle
+            label="Show"
+            options={[
+              { value: View.OPEN, label: 'Open' },
+              { value: View.ALL, label: 'All' },
+            ]}
+            value={view}
+            onChange={setView}
+          />
         }
       />
 

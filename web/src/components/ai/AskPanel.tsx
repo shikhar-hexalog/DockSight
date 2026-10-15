@@ -23,12 +23,12 @@ function AnswerTable({ answer }: { answer: AskAnswer }) {
   }
 
   return (
-    <div className="overflow-x-auto rounded-md border">
+    <div className="overflow-x-auto">
       <Table>
-        <TableHeader>
+        <TableHeader className="[&_tr]:border-ink">
           <TableRow className="hover:bg-transparent">
             {answer.table.columns.map(column => (
-              <TableHead key={column} className="h-8 text-xs">
+              <TableHead key={column} className="h-8 text-[12.5px] font-normal text-muted-foreground first:pl-0">
                 {column}
               </TableHead>
             ))}
@@ -39,7 +39,7 @@ function AnswerTable({ answer }: { answer: AskAnswer }) {
           {answer.table.rows.map((row, index) => (
             <TableRow key={index} className="text-[13px]">
               {row.map((cell, cellIndex) => (
-                <TableCell key={cellIndex} className="font-mono text-[12px]">
+                <TableCell key={cellIndex} className="font-mono text-[12px] first:pl-0">
                   {cell}
                 </TableCell>
               ))}
@@ -53,10 +53,10 @@ function AnswerTable({ answer }: { answer: AskAnswer }) {
 
 function AnswerView({ asked, answer }: { asked: string; answer: AskAnswer }) {
   return (
-    <div className="flex flex-col gap-3 rounded-lg border p-4">
-      <p className="text-xs text-muted-foreground">{asked}</p>
+    <div className="flex flex-col gap-3 pt-2">
+      <p className="text-[12.5px] text-muted-foreground">{asked}</p>
 
-      <p className="text-[14px] leading-relaxed whitespace-pre-line">{answer.answer}</p>
+      <p className="text-[15px] leading-relaxed whitespace-pre-line">{answer.answer}</p>
 
       <AnswerTable answer={answer} />
     </div>
@@ -66,7 +66,7 @@ function AnswerView({ asked, answer }: { asked: string; answer: AskAnswer }) {
 function AnswerArea({ asked, ask }: { asked: string; ask: ReturnType<typeof useAsk> }) {
   if (ask.isPending) {
     return (
-      <div className="flex items-center gap-3 rounded-lg border p-4 text-sm text-muted-foreground">
+      <div className="flex items-center gap-3 pt-2 text-[13.5px] text-muted-foreground">
         <Spinner />
         Reading the latest data. This takes about a minute.
       </div>
@@ -110,11 +110,11 @@ export function AskPanel() {
   }
 
   return (
-    <section className="flex flex-col gap-4">
-      <div>
-        <h2 className="text-sm font-medium">Ask about returns</h2>
+    <section className="flex flex-col gap-5">
+      <div className="border-b border-ink pb-2">
+        <h2 className="font-display text-[16px] font-semibold tracking-[-0.01em] text-ink">Ask about returns</h2>
 
-        <p className="text-xs text-muted-foreground">Answers use only today's data from this app and Uniware, never guesses.</p>
+        <p className="mt-1 text-[12.5px] text-muted-foreground">Answers use only today's data from this app and Uniware, never guesses.</p>
       </div>
 
       <form onSubmit={onSubmit} className="flex gap-2">
@@ -131,7 +131,7 @@ export function AskPanel() {
         </Button>
       </form>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col items-start gap-1.5">
         {SUGGESTIONS.map(suggestion => (
           <button
             key={suggestion}
@@ -140,7 +140,7 @@ export function AskPanel() {
               setQuestion(suggestion);
               submit(suggestion);
             }}
-            className="rounded-full border px-3 py-1 text-left text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="text-left text-[13px] text-brand underline-offset-[3px] transition-colors hover:text-ink hover:underline"
           >
             {suggestion}
           </button>

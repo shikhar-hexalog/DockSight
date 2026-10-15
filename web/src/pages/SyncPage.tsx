@@ -46,9 +46,9 @@ const ACCOUNT_COLUMNS = ['Account', 'Tenant', 'Facility', ...RETURN_TYPES.map(ty
 function Fact({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-[12.5px] text-muted-foreground">{label}</span>
 
-      <span className={cn('text-[13px]', mono && 'font-mono text-[12px]')}>{value}</span>
+      <span className={cn('text-[14px] text-ink', mono && 'font-mono text-[12.5px]')}>{value}</span>
     </div>
   );
 }
@@ -63,7 +63,7 @@ function StatusFacts({ status }: { status: SyncStatusResponse }) {
   const source = SOURCE_DESCRIPTION[status.mode];
 
   return (
-    <div className="grid grid-cols-2 gap-x-8 gap-y-4 px-6 py-5 lg:grid-cols-4">
+    <div className="mx-8 mt-2 grid grid-cols-2 gap-x-8 gap-y-4 border-t border-ink pt-3 lg:grid-cols-4">
       <Fact label="Source" value={source} />
 
       <Fact label="Accounts syncing" value={formatCount(status.accounts.length)} />
@@ -83,8 +83,8 @@ function cursorFor(cursors: SyncCursor[], account: string, type: (typeof RETURN_
 
 function AccountRow({ account, cursors }: { account: SyncAccount; cursors: SyncCursor[] }) {
   return (
-    <TableRow className="text-[13px]">
-      <TableCell className="font-mono text-[12px] font-medium">{account.key}</TableCell>
+    <TableRow className="text-[13.5px]">
+      <TableCell className="pl-0 font-mono text-[12.5px] text-ink">{account.key}</TableCell>
 
       <TableCell className="font-mono text-[12px]">{account.tenant}</TableCell>
 
@@ -102,10 +102,10 @@ function AccountRow({ account, cursors }: { account: SyncAccount; cursors: SyncC
 function AccountsTable({ status }: { status: SyncStatusResponse }) {
   return (
     <Table>
-      <TableHeader>
+      <TableHeader className="[&_tr]:border-ink">
         <TableRow className="hover:bg-transparent">
           {ACCOUNT_COLUMNS.map(column => (
-            <TableHead key={column} className="h-9 text-xs font-medium text-muted-foreground">
+            <TableHead key={column} className="h-9 text-[12.5px] font-normal text-muted-foreground first:pl-0">
               {column}
             </TableHead>
           ))}
@@ -127,14 +127,14 @@ function IncompleteAccounts({ status }: { status: SyncStatusResponse }) {
   }
 
   return (
-    <div className="mx-6 mb-4 flex flex-col gap-1.5 rounded-md border border-warn/40 bg-warn/5 px-4 py-3">
-      <div className="flex items-center gap-2 text-[13px] font-medium">
-        <TriangleAlert className="size-4 text-warn" />
+    <div className="mx-8 mt-6 flex flex-col gap-1.5">
+      <div className="flex items-center gap-2 text-[13.5px] font-medium text-warn">
+        <TriangleAlert className="size-4" />
         Some accounts in .env are skipped
       </div>
 
       {status.incompleteAccounts.map(account => (
-        <p key={account.key} className="text-xs text-muted-foreground">
+        <p key={account.key} className="text-[12.5px] text-muted-foreground">
           Account <span className="font-mono">{account.key}</span> is missing{' '}
           <span className="font-mono">{account.missing.join(', ')}</span>
         </p>
@@ -144,7 +144,7 @@ function IncompleteAccounts({ status }: { status: SyncStatusResponse }) {
 }
 
 function SectionTitle({ children }: { children: string }) {
-  return <h2 className="px-6 pt-4 pb-1 text-[11px] font-medium tracking-wider text-muted-foreground uppercase">{children}</h2>;
+  return <h2 className="border-b border-ink pb-2 font-display text-[16px] font-semibold tracking-[-0.01em] text-ink">{children}</h2>;
 }
 
 function runDuration(run: SyncRun): string {
@@ -185,8 +185,8 @@ function RunRow({ run }: { run: SyncRun }) {
   const numberCell = 'text-right font-mono text-[12px] tabular-nums';
 
   return (
-    <TableRow className="text-[13px]">
-      <TableCell className="font-mono text-[12px] tabular-nums">{formatDateTime(run.startedAt)}</TableCell>
+    <TableRow className="text-[13.5px]">
+      <TableCell className="pl-0 whitespace-nowrap tabular-nums">{formatDateTime(run.startedAt)}</TableCell>
 
       <TableCell className="font-mono text-[12px]">{run.account ?? '—'}</TableCell>
 
@@ -214,12 +214,12 @@ function RunRow({ run }: { run: SyncRun }) {
 function RunsTable({ runs }: { runs: SyncRun[] }) {
   return (
     <Table>
-      <TableHeader>
+      <TableHeader className="[&_tr]:border-ink">
         <TableRow className="hover:bg-transparent">
           {RUN_COLUMNS.map((column, index) => (
             <TableHead
               key={column}
-              className={cn('h-9 text-xs font-medium text-muted-foreground', index >= FIRST_NUMBER_COLUMN && 'text-right')}
+              className={cn('h-9 text-[12.5px] font-normal text-muted-foreground first:pl-0', index >= FIRST_NUMBER_COLUMN && 'text-right')}
             >
               {column}
             </TableHead>
@@ -270,21 +270,17 @@ function SyncBody({ status }: { status: SyncStatusResponse }) {
 
       <IncompleteAccounts status={status} />
 
-      <div className="border-t">
+      <section className="px-8 pt-10">
         <SectionTitle>Accounts</SectionTitle>
 
-        <div className="px-3 pb-2">
-          <AccountsTable status={status} />
-        </div>
-      </div>
+        <AccountsTable status={status} />
+      </section>
 
-      <div className="border-t">
+      <section className="px-8 pt-10 pb-10">
         <SectionTitle>Recent syncs</SectionTitle>
 
-        <div className="px-3 pb-4">
-          <RunsTable runs={status.runs} />
-        </div>
-      </div>
+        <RunsTable runs={status.runs} />
+      </section>
     </div>
   );
 }
@@ -293,12 +289,12 @@ function SyncContent() {
   const { data, error, isPending, refetch } = useSyncStatus();
 
   if (isPending) {
-    return <Skeleton className="m-6 h-40" />;
+    return <Skeleton className="mx-8 mt-4 h-40" />;
   }
 
   if (error) {
     return (
-      <div className="p-6">
+      <div className="px-8 py-4">
         <QueryError error={error} onRetry={() => void refetch()} />
       </div>
     );
