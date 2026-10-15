@@ -190,41 +190,63 @@ function ExpectedStrip({ items }: { items: ReturnItem[] }) {
   );
 }
 
-/** Asked once at the start of QC; kept on this desk until changed. */
-function NameStep({ current, onName }: { current: string | null; onName: (name: string) => void }) {
-  const [name, setName] = useState(current ?? '');
+/** Who is doing QC: always shown above the scan box, asked when nobody is set. */
+function QcOperator() {
+  const { scanner, setScanner } = useDesk();
+
+  const [editing, setEditing] = useState(false);
+
+  const [name, setName] = useState(scanner ?? '');
+
+  if (scanner && !editing) {
+    return (
+      <div className="flex items-center gap-3 text-sm">
+        <span className="text-muted-foreground">QC by</span>
+
+        <span className="font-semibold">{scanner}</span>
+
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setName(scanner);
+
+            setEditing(true);
+          }}
+        >
+          Change
+        </Button>
+      </div>
+    );
+  }
 
   function submit(event: FormEvent) {
     event.preventDefault();
 
     if (name.trim()) {
-      onName(name.trim());
+      setScanner(name.trim());
+
+      setEditing(false);
     }
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-3 rounded-xl border-2 border-dashed border-stage-expected/40 p-5">
-      <p className="font-semibold">Who is doing QC?</p>
+    <form onSubmit={submit} className="flex flex-wrap items-center gap-2 text-sm">
+      <span className="font-semibold">Who is doing QC?</span>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" autoFocus className="h-10 w-56" />
+      <Input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" autoFocus className="h-9 w-56" />
 
-        <Button type="submit" className="h-10 px-6" disabled={!name.trim()}>
-          Start QC
+      <Button type="submit" size="sm" disabled={!name.trim()}>
+        {scanner ? 'Save' : 'Start QC'}
+      </Button>
+
+      {scanner && (
+        <Button type="button" variant="ghost" size="sm" onClick={() => setEditing(false)}>
+          Cancel
         </Button>
-      </div>
+      )}
     </form>
-  );
-}
-
-function QcBy({ name, onChange }: { name: string; onChange: () => void }) {
-  return (
-    <p className="text-xs text-muted-foreground">
-      QC by <span className="font-medium text-foreground">{name}</span> ·{' '}
-      <button type="button" onClick={onChange} className="underline-offset-4 hover:underline">
-        Change
-      </button>
-    </p>
   );
 }
 
@@ -545,13 +567,11 @@ interface ManualStepProps {
   onRetry: (() => void) | null;
   photo: string | null;
   onGrade: (code: string, value: Grade) => void;
-  qcBy: string;
-  onChangeName: () => void;
   onSave: (shelf: string | null) => void;
   saving: boolean;
 }
 
-function ManualStep({ target, grades, locked, check, aiNote, onRetry, photo, qcBy, onChangeName, onGrade, onSave, saving }: ManualStepProps) {
+function ManualStep({ target, grades, locked, check, aiNote, onRetry, photo, onGrade, onSave, saving }: ManualStepProps) {
   const [shelf, setShelf] = useState('');
 
   const shelfCode = shelf.trim().toUpperCase();
@@ -597,17 +617,13 @@ function ManualStep({ target, grades, locked, check, aiNote, onRetry, photo, qcB
         </Button>
       </div>
 
-      <QcBy name={qcBy} onChange={onChangeName} />
-
       <PayloadPreview payload={previewPayload(target, grades, shelfCode)} title="What Uniware would receive (dry run, not sent)" />
     </form>
   );
 }
 
 function QcFlow({ target, onDone }: { target: QcReturn; onDone: (record: QcRecord) => void }) {
-  const { scanner, setScanner } = useDesk();
-
-  const [changingName, setChangingName] = useState(false);
+  const { scanner } = useDesk();
 
   const runCheck = useQcCheck();
 
@@ -693,27 +709,13 @@ function QcFlow({ target, onDone }: { target: QcReturn; onDone: (record: QcRecor
     );
   }
 
-  if (!scanner || changingName) {
-    return (
-      <NameStep
-        current={scanner}
-        onName={name => {
-          setScanner(name);
-
-          setChangingName(false);
-        }}
-      />
-    );
+  // A phone scan can open a parcel before anyone has said who is doing QC.
+  if (!scanner) {
+    return <p className="rounded-lg border border-warn/50 bg-warn/10 px-4 py-2 text-sm">Enter who is doing QC above to start.</p>;
   }
 
   if (step === Step.PHOTO) {
-    return (
-      <div className="flex flex-col gap-2">
-        <PhotoStep target={target} onPhoto={onPhoto} onSkip={() => setStep(Step.MANUAL)} />
-
-        <QcBy name={scanner} onChange={() => setChangingName(true)} />
-      </div>
-    );
+    return <PhotoStep target={target} onPhoto={onPhoto} onSkip={() => setStep(Step.MANUAL)} />;
   }
 
   if (step === Step.CHECKING) {
@@ -733,8 +735,6 @@ function QcFlow({ target, onDone }: { target: QcReturn; onDone: (record: QcRecor
       aiNote={aiNote}
       onRetry={aiFailed && photo ? () => onPhoto(photo) : null}
       photo={photo}
-      qcBy={scanner}
-      onChangeName={() => setChangingName(true)}
       onGrade={(code, value) => setGrades(current => ({ ...current, [code]: value }))}
       onSave={save}
       saving={submit.isPending}
@@ -908,6 +908,8 @@ function useQcScan() {
 }
 
 export function QcPage() {
+  const { scanner } = useDesk();
+
   const { current, setCurrent, open, pending } = useQcScan();
 
   const link = usePhoneLink(RemoteTarget.QC, ({ id, code }) => {
@@ -932,7 +934,9 @@ export function QcPage() {
       />
 
       <div className="flex max-w-5xl flex-col gap-6 px-6 py-6">
-        <ScanInput disabled={pending} onScan={code => void open(code)} />
+        <QcOperator />
+
+        <ScanInput disabled={pending || !scanner} onScan={code => void open(code)} />
 
         <Workspace lookup={current} onDone={onDone} />
 
