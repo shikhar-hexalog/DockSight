@@ -2,7 +2,7 @@
 // rider's count -> print the sheet -> both sign -> photo of it -> submit.
 
 import { CircleAlert, CircleCheck, FileText, Printer, Truck } from 'lucide-react';
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { BatchKind, type BatchStart } from '@hexabuild/shared';
@@ -10,6 +10,7 @@ import { BatchKind, type BatchStart } from '@hexabuild/shared';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
 import { useDesk } from '@/desk/DeskProvider';
 import { formatCount } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -61,12 +62,48 @@ function CountCheck({ scanned, courierCount }: { scanned: number; courierCount: 
   );
 }
 
+// Demo only: the sheet isn't actually read; the banner shows a check, then approves it.
+const SHEET_CHECK_MS = 2_000;
+
+function SheetCheck() {
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setChecking(false), SHEET_CHECK_MS);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (checking) {
+    return (
+      <p className="flex items-center gap-2 rounded-lg border border-stage-expected/40 bg-stage-expected/5 px-3 py-2 text-sm">
+        <Spinner className="size-4" />
+        Smart check: reading the signed sheet…
+      </p>
+    );
+  }
+
+  return (
+    <p className="flex items-center gap-2 rounded-lg border border-ok/40 bg-ok/10 px-3 py-2 text-sm">
+      <CircleCheck className="size-4 text-ok" />
+      <span>
+        <span className="font-semibold">Approved.</span> Smart check found both signatures on the sheet.
+      </span>
+    </p>
+  );
+}
+
 function SheetPhoto({ photo, onPhoto }: { photo: string | null; onPhoto: (photo: string) => void }) {
   return (
-    <div className="flex items-center gap-3">
-      <PhotoPicker onPhoto={onPhoto} cameraTitle="Photo of the signed handover sheet" allowPdf />
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-3">
+        <PhotoPicker onPhoto={onPhoto} cameraTitle="Photo of the signed handover sheet" allowPdf />
 
-      <SheetThumb photo={photo} />
+        <SheetThumb photo={photo} />
+      </div>
+
+      {/* A new upload restarts the check. */}
+      {photo && <SheetCheck key={photo} />}
     </div>
   );
 }
