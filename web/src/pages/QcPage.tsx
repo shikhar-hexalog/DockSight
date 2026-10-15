@@ -288,10 +288,16 @@ function CheckingStep({ photo, target }: { photo: string; target: QcReturn }) {
         Comparing with the catalogue…
       </p>
 
-      <div className="flex flex-wrap items-center gap-4">
-        <img src={photo} alt="What came back" className="size-28 rounded-md border object-cover" />
+      <div className="flex flex-wrap items-start gap-4">
+        <div className="flex w-28 flex-col gap-1">
+          <ItemImage url={photo} size="size-28" />
 
-        <ArrowRight className="size-5 text-muted-foreground" />
+          <span className="text-[11px] text-muted-foreground">What came back</span>
+        </div>
+
+        <div className="flex h-28 items-center">
+          <ArrowRight className="size-5 text-muted-foreground" />
+        </div>
 
         <ExpectedStrip items={target.items} />
       </div>

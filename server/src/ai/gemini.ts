@@ -4,9 +4,10 @@
 // - Images go inline, each preceded by its name, so prompts can refer to
 //   them as ./parcel.jpg, ./expected-1.png and so on.
 // - The key is sent in a header, never in the URL, so it stays out of logs.
-// - A busy or unavailable model is retried once, then the backup models are
-//   tried in order. A bad key or a bad request stops at once: another model
-//   would fail the same way.
+// - A busy or unavailable model hands over to the next one at once, and is
+//   skipped for a couple of minutes so later calls don't wait on it again.
+//   A bad key or a bad request stops at once: another model would fail the
+//   same way.
 
 import { AiError, type AiProvider, AiProviderName, type AiRequest } from './types.ts';
 
@@ -18,19 +19,32 @@ const list = (value: string | undefined) =>
     .map(model => model.trim())
     .filter(Boolean);
 
-const PRIMARY_MODEL = process.env.GEMINI_MODEL?.trim() || 'gemini-flash-latest';
+const PRIMARY_MODEL = process.env.GEMINI_MODEL?.trim() || 'gemini-3.5-flash';
 
 // Left blank, the defaults are used.
-const BACKUP_MODELS = list(process.env.GEMINI_BACKUP_MODELS).length > 0 ? list(process.env.GEMINI_BACKUP_MODELS) : ['gemini-3.5-flash', 'gemini-3.1-flash-lite'];
+const BACKUP_MODELS = list(process.env.GEMINI_BACKUP_MODELS).length > 0 ? list(process.env.GEMINI_BACKUP_MODELS) : ['gemini-3.1-flash-lite', 'gemini-flash-latest'];
 
 const MODELS = [...new Set([PRIMARY_MODEL, ...BACKUP_MODELS])];
 
-const ATTEMPT_TIMEOUT_MS = 60_000;
+const ATTEMPT_TIMEOUT_MS = 30_000;
 
-const RETRY_DELAY_MS = 1_500;
+// How long a busy model is passed over before it is tried first again.
+const COOLDOWN_MS = 2 * 60_000;
 
-// Overloaded, rate-limited or briefly down: worth another try.
-const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
+// Overloaded, rate-limited or briefly down: try another model, and this one later.
+const BUSY_STATUS = new Set([429, 500, 502, 503, 504]);
+
+/** Model -> when it may be tried first again. */
+const busyUntil = new Map<string, number>();
+
+/** Models in order, with any that were just busy moved to the end (still tried as a last resort). */
+function modelsInOrder(): string[] {
+  const now = Date.now();
+
+  const ready = MODELS.filter(model => (busyUntil.get(model) ?? 0) <= now);
+
+  return [...ready, ...MODELS.filter(model => !ready.includes(model))];
+}
 
 const MIME_FOR: Record<string, string> = {
   jpg: 'image/jpeg',
@@ -46,7 +60,7 @@ interface GeminiResponse {
 }
 
 /** How one attempt went: an answer, or why not and whether another model could help. */
-type Attempt<T> = { ok: true; value: T } | { ok: false; reason: string; next: 'retry' | 'skip' | 'stop'; message?: string };
+type Attempt<T> = { ok: true; value: T } | { ok: false; reason: string; next: 'busy' | 'skip' | 'stop'; message?: string };
 
 function mimeFor(name: string): string {
   return MIME_FOR[name.split('.').pop()?.toLowerCase() ?? ''] ?? 'image/jpeg';
@@ -78,7 +92,7 @@ async function attempt<T>(model: string, key: string, body: string): Promise<Att
   } catch (error) {
     const timedOut = (error as Error).name === 'TimeoutError';
 
-    return { ok: false, reason: timedOut ? 'timed out' : `network error: ${(error as Error).message}`, next: 'retry' };
+    return { ok: false, reason: timedOut ? 'timed out' : `network error: ${(error as Error).message}`, next: 'busy' };
   }
 
   const json = (await res.json().catch(() => ({}))) as GeminiResponse;
@@ -86,8 +100,8 @@ async function attempt<T>(model: string, key: string, body: string): Promise<Att
   if (!res.ok) {
     const reason = `${res.status} ${String(json.error?.message ?? '').slice(0, 200)}`;
 
-    if (RETRYABLE_STATUS.has(res.status)) {
-      return { ok: false, reason, next: 'retry' };
+    if (BUSY_STATUS.has(res.status)) {
+      return { ok: false, reason, next: 'busy' };
     }
 
     // The model is retired or unknown to this key.
@@ -143,29 +157,25 @@ export const geminiProvider: AiProvider = {
 
     const started = Date.now();
 
-    for (const model of MODELS) {
-      for (let tries = 1; tries <= 2; tries++) {
-        const result = await attempt<T>(model, key, body);
+    for (const model of modelsInOrder()) {
+      const result = await attempt<T>(model, key, body);
 
-        if (result.ok) {
-          console.log(`[ai] ${request.purpose} answered in ${((Date.now() - started) / 1000).toFixed(1)}s (${model})`);
+      if (result.ok) {
+        busyUntil.delete(model);
 
-          return result.value;
-        }
+        console.log(`[ai] ${request.purpose} answered in ${((Date.now() - started) / 1000).toFixed(1)}s (${model})`);
 
-        console.warn(`[ai] ${request.purpose}: ${model} failed (try ${tries}): ${result.reason}`);
+        return result.value;
+      }
 
-        if (result.next === 'stop') {
-          throw new AiError(result.message ?? 'Gemini could not answer');
-        }
+      console.warn(`[ai] ${request.purpose}: ${model} failed after ${((Date.now() - started) / 1000).toFixed(1)}s: ${result.reason}`);
 
-        if (result.next === 'skip') {
-          break;
-        }
+      if (result.next === 'stop') {
+        throw new AiError(result.message ?? 'Gemini could not answer');
+      }
 
-        if (tries === 1) {
-          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
-        }
+      if (result.next === 'busy') {
+        busyUntil.set(model, Date.now() + COOLDOWN_MS);
       }
     }
 

@@ -120,8 +120,11 @@ export async function checkProduct(returnId: string, photo: string): Promise<QcC
 
   const lines: string[] = [];
 
+  // Fetched together: one at a time adds a second or more per item.
+  const catalogs = await Promise.all(expected.map(item => fetchCatalogImage(item.imageUrl)));
+
   for (const [index, item] of expected.entries()) {
-    const catalog = await fetchCatalogImage(item.imageUrl);
+    const catalog = catalogs[index];
 
     if (catalog) {
       const name = `expected-${index + 1}.${catalog.extension}`;
