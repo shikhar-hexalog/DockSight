@@ -39,8 +39,8 @@ function IssueButton({ condition, index, active, onClick }: { condition: ParcelC
       aria-pressed={active}
       title={`Alt+${index + 1}`}
       className={cn(
-        'flex h-8 items-center gap-1.5 rounded-full border px-3 text-sm transition-colors',
-        active ? 'border-overdue bg-overdue text-white' : 'hover:border-foreground/30 hover:bg-muted/60'
+        'flex h-9 items-center gap-1.5 rounded-sm border px-3 text-[13.5px] transition-colors',
+        active ? 'border-overdue bg-overdue text-white' : 'border-input hover:border-ink hover:text-ink'
       )}
     >
       <Icon className="size-4" />
@@ -223,9 +223,9 @@ export function ConditionPanel({ entry, isLatest, onBackToLatest }: ConditionPan
   }
 
   return (
-    <section className="flex flex-col gap-2 rounded-xl border px-4 py-2.5">
+    <section className="flex flex-col gap-2 border-b pb-3">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="mr-1 text-sm font-medium">
+        <span className="mr-1 text-[13.5px] font-medium text-ink">
           Anything wrong? <span className="font-normal text-muted-foreground">optional</span>
         </span>
 

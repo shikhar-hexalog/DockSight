@@ -18,7 +18,6 @@ import {
 } from '@hexabuild/shared';
 
 import { Explained } from '@/components/common/Explained';
-import { InfoTip } from '@/components/common/InfoTip';
 import { QueryError } from '@/components/common/QueryError';
 import { ReturnsTable } from '@/components/returns/ReturnsTable';
 import { SearchBox } from '@/components/returns/SearchBox';
@@ -197,8 +196,8 @@ function TotalsRow({ days, scope, onPick }: { days: TatDay[]; scope: ScopeFilter
   const total = (part: InwardPart) => days.reduce((sum, d) => sum + countOf(d, part), 0);
 
   return (
-    <TableRow className="bg-muted/40 hover:bg-muted/40">
-      <TableCell className="text-[12px] font-medium">Whole period</TableCell>
+    <TableRow className="border-b-ink hover:bg-transparent">
+      <TableCell className="pl-0 text-[13px] font-semibold text-ink">Whole period</TableCell>
 
       {PARTS.map(part => (
         <TableCell key={part} className={cell}>
@@ -240,7 +239,7 @@ function DayRow({ day, onPick }: { day: TatDay; onPick: (pick: Pick) => void }) 
 
   return (
     <TableRow>
-      <TableCell className="text-[12px] whitespace-nowrap">{label}</TableCell>
+      <TableCell className="pl-0 text-[13px] whitespace-nowrap">{label}</TableCell>
 
       {PARTS.map(part => (
         <TableCell key={part} className={cell}>
@@ -263,11 +262,8 @@ function DayRow({ day, onPick }: { day: TatDay; onPick: (pick: Pick) => void }) 
 
 function Header({ label, info }: { label: string; info: string }) {
   return (
-    <TableHead className="text-right">
-      <span className="inline-flex items-center gap-1">
-        {label}
-        <InfoTip text={info} />
-      </span>
+    <TableHead className="h-9 text-[12.5px] font-normal text-muted-foreground text-right">
+      <Explained text={info}>{label}</Explained>
     </TableHead>
   );
 }
@@ -275,9 +271,9 @@ function Header({ label, info }: { label: string; info: string }) {
 function InwardTable({ days, scope, onPick }: { days: TatDay[]; scope: ScopeFilters; onPick: (pick: Pick) => void }) {
   return (
     <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Inward date</TableHead>
+      <TableHeader className="[&_tr]:border-ink">
+        <TableRow className="hover:bg-transparent">
+          <TableHead className="h-9 text-[12.5px] font-normal text-muted-foreground pl-0">Inward date</TableHead>
 
           {PARTS.map(part => (
             <Header key={part} label={PART[part].title} info={PART[part].info} />
@@ -318,7 +314,7 @@ function PickedResults({ pick, client, q }: { pick: Pick; client?: string; q: st
   }
 
   if (data.total === 0) {
-    return <p className="py-10 text-center text-sm text-muted-foreground">Nothing in this list matches "{q}".</p>;
+    return <p className="py-4 text-[13.5px] text-muted-foreground">Nothing in this list matches "{q}".</p>;
   }
 
   const shown =
@@ -327,7 +323,7 @@ function PickedResults({ pick, client, q }: { pick: Pick; client?: string; q: st
   return (
     <>
       <div className="flex items-center justify-between gap-3">
-        <span className="text-xs text-muted-foreground">
+        <span className="text-[12.5px] text-muted-foreground">
           {shown}
           {q ? ` matching "${q}"` : ''}
         </span>
@@ -340,7 +336,7 @@ function PickedResults({ pick, client, q }: { pick: Pick; client?: string; q: st
         </Button>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-auto rounded-lg border">
+      <div className="min-h-0 flex-1 overflow-auto">
         <ReturnsTable rows={data.data} />
       </div>
     </>
@@ -375,13 +371,13 @@ function PickedSheet({ pick, client, onClose }: { pick: Pick | null; client?: st
     <Sheet open={pick !== null} onOpenChange={open => !open && onClose()}>
       {/* Wide enough for the whole table: the default sheet is only 384px. */}
       <SheetContent side="right" className="gap-0 data-[side=right]:w-[min(1200px,95vw)] data-[side=right]:sm:max-w-none">
-        <SheetHeader>
-          <SheetTitle>{pick ? PART[pick.part].title : ''}</SheetTitle>
+        <SheetHeader className="px-8 pt-7">
+          <SheetTitle className="font-display text-[24px] font-semibold tracking-[-0.03em] text-ink">{pick ? PART[pick.part].title : ''}</SheetTitle>
 
           <SheetDescription>{pick?.label}. Click a return for its full history.</SheetDescription>
         </SheetHeader>
 
-        <div className="flex min-h-0 flex-1 flex-col px-4 pb-4">
+        <div className="flex min-h-0 flex-1 flex-col px-8 pb-6">
           <PickedBody pick={pick} client={client} />
         </div>
       </SheetContent>
@@ -395,7 +391,7 @@ function NoDockNote({ count }: { count: number }) {
   }
 
   return (
-    <p className="text-xs text-muted-foreground">
+    <p className="text-[12.5px] text-muted-foreground">
       {formatCount(count)} returns were processed in this period with no dock record (never scanned or listed at our dock), so they have no inward
       date and aren't in these numbers.
     </p>

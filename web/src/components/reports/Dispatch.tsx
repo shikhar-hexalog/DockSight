@@ -5,7 +5,7 @@ import { Download } from 'lucide-react';
 
 import type { DispatchDay, ScopeFilters } from '@hexabuild/shared';
 
-import { InfoTip } from '@/components/common/InfoTip';
+import { Explained } from '@/components/common/Explained';
 import { QueryError } from '@/components/common/QueryError';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -92,24 +92,21 @@ export function DispatchPanel({ scope }: { scope: ScopeFilters }) {
       <Downloads scope={scope} />
 
       <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Day</TableHead>
+        <TableHeader className="[&_tr]:border-ink">
+          <TableRow className="hover:bg-transparent">
+            <TableHead className="h-9 text-[12.5px] font-normal text-muted-foreground pl-0">Day</TableHead>
 
             {COLUMNS.map(column => (
-              <TableHead key={column.key} className="text-right">
-                <span className="inline-flex items-center gap-1">
-                  {column.label}
-                  <InfoTip text={column.info} />
-                </span>
+              <TableHead key={column.key} className="h-9 text-[12.5px] font-normal text-muted-foreground text-right">
+                <Explained text={column.info}>{column.label}</Explained>
               </TableHead>
             ))}
           </TableRow>
         </TableHeader>
 
         <TableBody>
-          <TableRow className="bg-muted/40 hover:bg-muted/40">
-            <TableCell className="text-[12px] font-medium">Whole period</TableCell>
+          <TableRow className="border-b-ink hover:bg-transparent">
+            <TableCell className="pl-0 text-[13px] font-semibold text-ink">Whole period</TableCell>
 
             {COLUMNS.map(column => (
               <TableCell key={column.key} className={cn(cell, 'font-semibold')}>
@@ -120,7 +117,7 @@ export function DispatchPanel({ scope }: { scope: ScopeFilters }) {
 
           {[...data.days].reverse().map(day => (
             <TableRow key={day.day}>
-              <TableCell className="text-[12px] whitespace-nowrap">{longDay.format(new Date(`${day.day}T00:00:00`))}</TableCell>
+              <TableCell className="pl-0 text-[13px] whitespace-nowrap">{longDay.format(new Date(`${day.day}T00:00:00`))}</TableCell>
 
               {COLUMNS.map(column => (
                 <TableCell key={column.key} className={cell}>

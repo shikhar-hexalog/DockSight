@@ -61,7 +61,7 @@ const TONE_VIBRATION: Record<OutcomeTone, number[]> = {
 
 const TONE_LOOK: Record<OutcomeTone, { icon: LucideIcon; card: string }> = {
   [OutcomeTone.GOOD]: { icon: CircleCheck, card: 'bg-ok text-white' },
-  [OutcomeTone.REPEAT]: { icon: Repeat, card: 'bg-warn text-white' },
+  [OutcomeTone.REPEAT]: { icon: Repeat, card: 'bg-signal text-ink' },
   [OutcomeTone.BAD]: { icon: CircleX, card: 'bg-overdue text-white' },
 };
 
@@ -113,12 +113,12 @@ function useResults(sessionId: string, onResult: (result: RemoteResult) => void)
 
 function LatestCard({ entry }: { entry: Entry | undefined }) {
   if (!entry) {
-    return <div className="rounded-2xl border border-white/15 p-5 text-center text-sm text-white/60">Point the camera at an AWB barcode</div>;
+    return <p className="py-4 text-center text-[15px] text-white/60">Point the camera at an AWB barcode</p>;
   }
 
   if (!entry.result) {
     return (
-      <div className="flex items-center gap-3 rounded-2xl bg-white/10 p-5">
+      <div className="flex items-center gap-3 rounded-sm bg-white/10 p-5">
         <Loader className="size-8 shrink-0 animate-spin" />
 
         <div className="min-w-0">
@@ -137,11 +137,11 @@ function LatestCard({ entry }: { entry: Entry | undefined }) {
   const Icon = look.icon;
 
   return (
-    <div key={entry.id} className={cn('flex items-center gap-3 rounded-2xl p-5 animate-in fade-in-0 zoom-in-95', look.card)}>
+    <div key={entry.id} className={cn('flex items-center gap-3 rounded-sm p-5 animate-in fade-in-0', look.card)}>
       <Icon className="size-10 shrink-0" strokeWidth={2} />
 
       <div className="min-w-0">
-        <p className="text-xl leading-tight font-semibold">{outcome.label}</p>
+        <p className="font-display text-[22px] leading-tight font-semibold">{outcome.label}</p>
 
         <Mono className="block truncate text-base opacity-90">{entry.code}</Mono>
       </div>
@@ -179,12 +179,12 @@ function History({ entries }: { entries: Entry[] }) {
 
 function CameraOverlay({ state, error, onStart }: { state: CameraState; error: string | null; onStart: () => void }) {
   if (state === CameraState.ON) {
-    return <div className="pointer-events-none absolute inset-x-8 top-1/2 h-24 -translate-y-1/2 rounded-xl border-2 border-white/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]" />;
+    return <div className="pointer-events-none absolute inset-x-8 top-1/2 h-24 -translate-y-1/2 rounded-sm border-2 border-white/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]" />;
   }
 
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
-      <Button size="lg" onClick={onStart} disabled={state === CameraState.STARTING} className="h-12 bg-white px-6 text-base text-black hover:bg-white/90">
+      <Button size="lg" onClick={onStart} disabled={state === CameraState.STARTING} className="h-12 bg-white px-6 text-base text-ink hover:bg-white/90">
         <Camera className="size-5" />
         {state === CameraState.STARTING ? 'Starting camera…' : 'Start scanning'}
       </Button>
@@ -233,7 +233,7 @@ function ManualEntry({ onCode }: { onCode: (code: string) => void }) {
 
 function SessionError({ message }: { message: string }) {
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-neutral-950 p-6 text-center text-white">
+    <div className="flex min-h-dvh items-center justify-center bg-ink p-6 text-center text-white">
       <p>{message}</p>
     </div>
   );
@@ -289,14 +289,14 @@ function Scanner({ sessionId, target }: { sessionId: string; target: RemoteTarge
   const camera = useCameraScanner(videoRef, send);
 
   return (
-    <div className="flex min-h-dvh flex-col gap-4 bg-neutral-950 p-4 text-white">
+    <div className="flex min-h-dvh flex-col gap-4 bg-ink p-4 text-white">
       <header className="flex items-baseline justify-between">
-        <span className="text-sm font-semibold">Hexalog scanner</span>
+        <span className="font-display text-[16px] font-semibold">Hexalog scanner</span>
 
         <span className="text-xs text-white/60">{REMOTE_TARGET_LABEL[target]}</span>
       </header>
 
-      <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-black">
+      <div className="relative aspect-[3/4] overflow-hidden rounded-sm bg-black">
         <video ref={videoRef} muted playsInline className="size-full object-cover" />
 
         <CameraOverlay state={camera.state} error={camera.error} onStart={() => void camera.start()} />

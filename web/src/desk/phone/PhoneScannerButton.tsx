@@ -21,7 +21,7 @@ function PairingBody({ link }: { link: PhoneLink }) {
   }
 
   if (!link.session) {
-    return <Spinner className="m-6" />;
+    return <Spinner className="mx-auto my-6" />;
   }
 
   return (
@@ -90,8 +90,7 @@ export function PhoneScannerButton({ link }: { link: PhoneLink }) {
 
   return (
     <>
-      <Button size="sm" variant={link.phoneJoined ? 'secondary' : 'outline'} onClick={onOpen}>
-        <span className={cn('size-1.5 rounded-full', link.phoneJoined ? 'bg-ok' : 'hidden')} />
+      <Button size="sm" variant="outline" onClick={onOpen} className={cn(link.phoneJoined && 'border-ok text-ok hover:text-ok')}>
         <Smartphone />
         {label}
       </Button>

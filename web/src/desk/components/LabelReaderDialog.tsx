@@ -94,7 +94,7 @@ function WebcamCapture({ onCapture }: { onCapture: (base64: string) => void }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <video ref={videoRef} muted playsInline className="aspect-video w-full rounded-lg bg-black object-cover" />
+      <video ref={videoRef} muted playsInline className="aspect-video w-full rounded-sm bg-black object-cover" />
 
       <Button onClick={capture}>
         <Camera />
@@ -122,7 +122,7 @@ function UploadPhoto({ onCapture }: { onCapture: (base64: string) => void }) {
   }
 
   return (
-    <label className="flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed px-3 py-2 text-sm text-muted-foreground hover:bg-muted">
+    <label className="flex cursor-pointer items-center justify-center gap-2 rounded-sm border border-dashed border-input px-3 py-2.5 text-[13.5px] text-muted-foreground hover:border-ink hover:text-ink">
       <ImageUp className="size-4" />
       Or upload a photo of the label
       <input type="file" accept="image/*" className="hidden" onChange={e => void onChange(e)} />
@@ -132,13 +132,13 @@ function UploadPhoto({ onCapture }: { onCapture: (base64: string) => void }) {
 
 function MatchLine({ candidate }: { candidate: LabelCandidate }) {
   if (!candidate.match) {
-    return <span className="text-xs text-muted-foreground">Not an expected return</span>;
+    return <span className="text-[12.5px] text-muted-foreground">Not an expected return</span>;
   }
 
   const { match } = candidate;
 
   return (
-    <span className="text-xs text-ok">
+    <span className="text-[12.5px] text-ok">
       Expected: {RETURN_TYPE_LABEL[match.type]} {match.sourceCode} · {match.courier ?? 'courier unknown'} · {STAGE_LABEL[match.stage]}
     </span>
   );
@@ -146,10 +146,10 @@ function MatchLine({ candidate }: { candidate: LabelCandidate }) {
 
 function CandidateRow({ candidate, onUse }: { candidate: LabelCandidate; onUse: (code: string) => void }) {
   return (
-    <li className={cn('flex items-center gap-3 rounded-md border px-3 py-2', candidate.match && 'border-ok/40 bg-ok/5')}>
+    <li className="flex items-center gap-3 border-b py-2.5">
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-baseline gap-2">
-          <Mono className="text-[14px] font-semibold">{candidate.code}</Mono>
+          <Mono className={cn('text-[14px] font-semibold', candidate.match ? 'text-ok' : 'text-ink')}>{candidate.code}</Mono>
 
           <span className="text-[11px] text-muted-foreground">
             {candidate.kind} · {Math.round(candidate.confidence * 100)}% sure

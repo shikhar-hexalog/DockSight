@@ -102,9 +102,10 @@
     --stage-processed: #2f7d5f;
     --stage-cancelled: #b3aac8;
     --warn: #c98a00;
-    /* Chart series: validated categorical slots 1-2 (blue, orange) for CVD separation. */
-    --series-1: #2a78d6;
-    --series-2: #eb6834;
+    /* Two-series charts: brand purple + amber. Validated (dataviz validate_palette.js, light surface):
+       lightness band, chroma, CVD separation ΔE 32, normal-vision ΔE 36, contrast >= 3:1. */
+    --series-1: #5b34c9;
+    --series-2: #b87400;
     /* One-series charts: the logo cube's purple, passes the dataviz lightness/contrast checks. */
     --chart-mark: #5b34c9;
     --overdue: #c0262f;

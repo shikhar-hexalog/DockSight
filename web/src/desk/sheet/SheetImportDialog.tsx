@@ -69,8 +69,8 @@ function Problems({ sheet }: { sheet: ReadSheetResult }) {
   }
 
   return (
-    <div className="rounded-md border border-warn/40 bg-warn/5 p-3 text-xs">
-      <p className="mb-1 font-medium">{formatCount(sheet.problems.length)} rows skipped</p>
+    <div className="text-[12.5px]">
+      <p className="mb-1 font-medium text-warn">{formatCount(sheet.problems.length)} rows skipped</p>
 
       <ul className="space-y-0.5">
         {sheet.problems.slice(0, MAX_PROBLEMS_SHOWN).map(problem => (
@@ -133,7 +133,7 @@ function FilePicker({ onFile, busy }: { onFile: (file: File) => void; busy: bool
   return (
     <label
       className={cn(
-        'flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed p-6 text-center text-sm hover:bg-muted/40',
+        'flex cursor-pointer flex-col items-center gap-2 rounded-sm border border-dashed border-input p-6 text-center text-[13.5px] hover:border-ink',
         busy && 'pointer-events-none opacity-60'
       )}
     >

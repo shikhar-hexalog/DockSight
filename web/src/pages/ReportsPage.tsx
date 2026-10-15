@@ -65,20 +65,21 @@ function VolumeChart({ days }: { days: TatDay[] }) {
 
   return (
     <ChartContainer config={volumeConfig} className="h-64 w-full">
-      <BarChart data={data} margin={{ top: 8, left: 0, right: 8 }}>
-        <CartesianGrid vertical={false} strokeOpacity={0.5} />
+      <BarChart data={data} margin={{ top: 8, left: 0, right: 0 }} barCategoryGap={2}>
+        <CartesianGrid vertical={false} stroke="var(--border)" />
 
-        <XAxis dataKey="day" tickLine={false} axisLine={false} tickMargin={8} minTickGap={16} />
+        <XAxis dataKey="day" tickLine={false} axisLine={{ stroke: 'var(--ink)' }} tickMargin={8} minTickGap={16} />
 
-        <YAxis tickLine={false} axisLine={false} allowDecimals={false} width={48} tickFormatter={value => formatCount(Number(value))} />
+        <YAxis tickLine={false} axisLine={false} allowDecimals={false} width={40} tickCount={4} tickFormatter={value => formatCount(Number(value))} />
 
-        <ChartTooltip cursor={{ fillOpacity: 0.4 }} content={<ChartTooltipContent />} />
+        <ChartTooltip cursor={{ fill: 'var(--muted)' }} content={<ChartTooltipContent className="min-w-52" />} />
 
-        <ChartLegend verticalAlign="top" content={<ChartLegendContent />} />
+        <ChartLegend verticalAlign="top" align="left" content={<ChartLegendContent className="justify-start pb-3" />} />
 
-        <Bar dataKey="processed" stackId="inward" fill="var(--color-processed)" maxBarSize={22} />
+        {/* A 2px surface-coloured edge keeps the two segments apart. */}
+        <Bar dataKey="processed" stackId="inward" fill="var(--color-processed)" stroke="var(--background)" strokeWidth={2} maxBarSize={22} />
 
-        <Bar dataKey="pending" stackId="inward" fill="var(--color-pending)" radius={[4, 4, 0, 0]} maxBarSize={22} />
+        <Bar dataKey="pending" stackId="inward" fill="var(--color-pending)" stroke="var(--background)" strokeWidth={2} radius={[4, 4, 0, 0]} maxBarSize={22} />
       </BarChart>
     </ChartContainer>
   );
@@ -94,21 +95,22 @@ function TatChart({ days }: { days: TatDay[] }) {
   return (
     <ChartContainer config={tatConfig} className="h-64 w-full">
       <LineChart data={data} margin={{ top: 16, left: 0, right: 16 }}>
-        <CartesianGrid vertical={false} strokeOpacity={0.5} />
+        <CartesianGrid vertical={false} stroke="var(--border)" />
 
-        <XAxis dataKey="day" tickLine={false} axisLine={false} tickMargin={8} minTickGap={16} />
+        <XAxis dataKey="day" tickLine={false} axisLine={{ stroke: 'var(--ink)' }} tickMargin={8} minTickGap={16} />
 
-        <YAxis tickLine={false} axisLine={false} width={44} tickFormatter={value => `${value}h`} />
+        <YAxis tickLine={false} axisLine={false} width={44} tickCount={4} tickFormatter={value => `${value}h`} />
 
         <ChartTooltip
           content={<ChartTooltipContent formatter={(value, name) => `${tatConfig[name as keyof typeof tatConfig].label}: ${value}h`} />}
         />
 
-        <ChartLegend verticalAlign="top" content={<ChartLegendContent />} />
+        <ChartLegend verticalAlign="top" align="left" content={<ChartLegendContent className="justify-start pb-3" />} />
 
-        <Line dataKey="putaway" stroke="var(--color-putaway)" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+        {/* 8px markers with a 2px surface ring, so overlapping points stay readable. */}
+        <Line dataKey="putaway" stroke="var(--color-putaway)" strokeWidth={2} dot={{ r: 4, strokeWidth: 2, stroke: 'var(--background)', fill: 'var(--color-putaway)' }} connectNulls />
 
-        <Line dataKey="processed" stroke="var(--color-processed)" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+        <Line dataKey="processed" stroke="var(--color-processed)" strokeWidth={2} dot={{ r: 4, strokeWidth: 2, stroke: 'var(--background)', fill: 'var(--color-processed)' }} connectNulls />
       </LineChart>
     </ChartContainer>
   );
@@ -118,17 +120,17 @@ const COURIER_COLUMNS = ['Courier', 'Came in', 'Not processed', 'Putaway pending
 
 function CourierTable({ report }: { report: TatReportResponse }) {
   if (report.byCourier.length === 0) {
-    return <p className="text-sm text-muted-foreground">Nothing came in during this period.</p>;
+    return <p className="text-[13.5px] text-muted-foreground">Nothing came in during this period.</p>;
   }
 
   const num = 'text-right font-mono text-[12px] tabular-nums';
 
   return (
     <Table>
-      <TableHeader>
+      <TableHeader className="[&_tr]:border-ink">
         <TableRow className="hover:bg-transparent">
           {COURIER_COLUMNS.map((column, index) => (
-            <TableHead key={column} className={cn('h-9 text-xs', index > 0 && 'text-right')}>
+            <TableHead key={column} className={cn('h-9 text-[12.5px] font-normal text-muted-foreground first:pl-0', index > 0 && 'text-right')}>
               {column}
             </TableHead>
           ))}
@@ -138,7 +140,7 @@ function CourierTable({ report }: { report: TatReportResponse }) {
       <TableBody>
         {report.byCourier.map(row => (
           <TableRow key={row.courier} className="text-[13px]">
-            <TableCell>{row.courier}</TableCell>
+            <TableCell className="pl-0">{row.courier}</TableCell>
 
             <TableCell className={num}>{formatCount(row.received)}</TableCell>
 
@@ -166,12 +168,12 @@ function ReportBody({ scope }: { scope: ScopeFilters }) {
   const { data, error, isPending, refetch } = useTatReport(scope);
 
   if (isPending) {
-    return <Skeleton className="m-6 h-96" />;
+    return <Skeleton className="mx-8 mt-4 h-96" />;
   }
 
   if (error) {
     return (
-      <div className="p-6">
+      <div className="px-8 py-4">
         <QueryError error={error} onRetry={() => void refetch()} />
       </div>
     );

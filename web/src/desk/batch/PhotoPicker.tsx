@@ -32,14 +32,14 @@ function frameToJpeg(video: HTMLVideoElement): string {
 
 function CameraBody({ shot, error, videoRef }: { shot: string | null; error: string | null; videoRef: React.RefObject<HTMLVideoElement | null> }) {
   if (error) {
-    return <p className="rounded-lg border border-overdue/40 bg-overdue/5 p-4 text-sm text-overdue">{error}</p>;
+    return <p className="text-[13.5px] text-overdue">{error}</p>;
   }
 
   if (shot) {
-    return <img src={shot} alt="Captured" className="w-full rounded-lg border" />;
+    return <img src={shot} alt="Captured" className="w-full rounded-sm" />;
   }
 
-  return <video ref={videoRef} muted playsInline className="aspect-[4/3] w-full rounded-lg bg-black object-cover" />;
+  return <video ref={videoRef} muted playsInline className="aspect-[4/3] w-full rounded-sm bg-black object-cover" />;
 }
 
 function CameraActions({

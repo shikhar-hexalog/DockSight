@@ -21,12 +21,10 @@ const startTime = new Intl.DateTimeFormat('en-IN', { hour: '2-digit', minute: '2
 function Step({ n, title, done, children }: { n: number; title: string; done: boolean; children: React.ReactNode }) {
   return (
     <section className="flex gap-3">
-      <span className={cn('grid size-6 shrink-0 place-items-center rounded-full border text-xs font-semibold', done && 'border-ok bg-ok text-white')}>
-        {n}
-      </span>
+      <span className={cn('w-5 shrink-0 font-display text-[20px] leading-none font-semibold tabular-nums', done ? 'text-ok' : 'text-ink')}>{n}</span>
 
       <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <h3 className="text-sm font-medium">{title}</h3>
+        <h3 className="text-[14px] font-medium text-ink">{title}</h3>
 
         {children}
       </div>
