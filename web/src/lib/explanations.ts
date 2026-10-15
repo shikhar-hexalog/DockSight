@@ -23,7 +23,7 @@ export const EXPLAIN = {
   manifested: 'In Uniware but not on the shelf yet: acknowledged (RETURN_ACKNOWLEDGED), or returned and waiting for putaway to close.',
   closedToday:
     "Putaway closed today: stock back in inventory. 'No dock scan' = never scanned at our desk or listed in the receiving sheet, usually parcels still received the old way.",
-  shiftBrief: 'An AI-written summary for the shift change, made from the live numbers. Click to read the full note.',
+  shiftBrief: 'A smart summary for the shift change, made from the live numbers. Click to read the full note.',
 
   // Overview panels
   pendingAges: `Every return in Pending in Uniware, grouped by how long it has been at our dock without being processed. Over 1 working day counts as late. ${TIME_NOTE}`,

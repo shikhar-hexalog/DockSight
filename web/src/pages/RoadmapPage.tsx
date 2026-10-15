@@ -82,7 +82,7 @@ const BUSINESS_LINES: BusinessLine[] = [
           { label: 'Receive desk, offline, phone scanner', to: routes.receive },
           { label: 'Handover with condition and signed sheet', to: routes.receive },
           { label: 'Manifest made from each handover', to: routes.manifest },
-          { label: 'AI product check at QC', to: routes.qc },
+          { label: 'Smart product check at QC', to: routes.qc },
           { label: 'Dispatch guard for cancelled orders', to: routes.dispatch },
           { label: 'Reports by inward date', to: routes.reports },
         ],
@@ -106,7 +106,7 @@ const SHARED_BLOCKS = [
   'WMS connectors (Uniware first)',
   'Working-hours clock',
   'Reports and exports',
-  'AI briefs',
+  'Smart briefs',
 ];
 
 const LINE = 'bg-muted-foreground/35';

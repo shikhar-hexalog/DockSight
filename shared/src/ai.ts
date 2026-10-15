@@ -4,6 +4,8 @@ import type { ReturnType, Stage } from './constants.ts';
 
 /** Which engine writes AI answers. */
 export const AiProviderName = {
+  /** The Gemini API, with GEMINI_API_KEY from .env. */
+  GEMINI: 'gemini',
   /** `claude -p` on the server machine, using the logged-in Claude subscription. */
   CLAUDE_CLI: 'claude-cli',
   /** Fixed answers built from the data, for development and tests. */

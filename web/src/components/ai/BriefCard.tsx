@@ -38,7 +38,7 @@ function MockNote({ provider }: { provider: string }) {
     return null;
   }
 
-  return <p className="rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">Written in mock mode from fixed templates, not by the AI.</p>;
+  return <p className="rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">Written in mock mode from fixed templates, not by the smart engine.</p>;
 }
 
 /** A brief laid out for reading: headline, summary, sections, then actions. */

@@ -19,6 +19,8 @@ import {
   type Stage,
   type UniwareQcPayload,
   normalizeCode,
+  parcelShelf,
+  shelfFor,
 } from '@hexabuild/shared';
 
 import { db, transaction } from '../db/index.ts';
@@ -259,10 +261,12 @@ export function submitQc(input: QcSubmit): QcRecord {
       saleOrderItems: input.items.map(item => ({
         code: item.code,
         status: item.grade,
-        shelfCode: input.shelfCode,
+        shelfCode: shelfFor(input.shelfCode, item.grade),
         ...(item.reason ? { reason: item.reason } : {}),
       })),
     };
+
+    const shelfCode = parcelShelf(input.shelfCode, input.items.map(item => item.grade));
 
     const id = randomUUID();
 
@@ -278,7 +282,7 @@ export function submitQc(input: QcSubmit): QcRecord {
       input.returnId,
       input.qcBy,
       qcAt,
-      input.shelfCode,
+      shelfCode,
       photo,
       input.aiCheck ? JSON.stringify(input.aiCheck) : null,
       JSON.stringify(payload)
@@ -294,7 +298,7 @@ export function submitQc(input: QcSubmit): QcRecord {
       returnId: input.returnId,
       type: EventType.QC_DONE,
       actor: input.qcBy,
-      payload: { shelfCode: input.shelfCode, grades: input.items.map(item => item.grade) },
+      payload: { shelfCode, grades: input.items.map(item => item.grade) },
       occurredAt: qcAt,
     });
 

@@ -28,7 +28,12 @@ const aiCheck = z.object({
 const qcBody = z.object({
   returnId: z.string().min(1),
   qcBy: person,
-  shelfCode: z.string().trim().min(1).max(40),
+  shelfCode: z
+    .string()
+    .trim()
+    .max(40)
+    .nullable()
+    .transform(code => code || null),
   items: z
     .array(
       z
