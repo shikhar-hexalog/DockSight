@@ -65,7 +65,7 @@ createRoot(document.getElementById('root')!).render(
       <TooltipProvider delayDuration={300}>
         <RouterProvider router={router} />
 
-        <Toaster position="top-center" />
+        <Toaster position="bottom-right" />
       </TooltipProvider>
     </QueryClientProvider>
   </StrictMode>

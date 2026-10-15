@@ -1,4 +1,4 @@
-import { CircleCheck, CloudOff, Mail, MailWarning, OctagonX, RefreshCw, Repeat, ShieldAlert, Trash2, type LucideIcon } from 'lucide-react';
+import { CircleCheck, CloudOff, OctagonX, RefreshCw, Repeat, ShieldAlert, Trash2, type LucideIcon } from 'lucide-react';
 import { useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
@@ -86,7 +86,7 @@ function HoldFacts({ hold }: { hold: DispatchHold | null }) {
 
 function CheckingCard({ code }: { code: string }) {
   return (
-    <div className="flex min-h-40 items-center gap-5 rounded-xl border-2 p-5">
+    <div className="flex min-h-28 items-center gap-5 rounded-xl border-2 p-5">
       <Spinner className="size-10 shrink-0" />
 
       <div className="flex flex-col gap-1">
@@ -102,7 +102,7 @@ function CheckingCard({ code }: { code: string }) {
 
 function OfflineClearCard({ code }: { code: string }) {
   return (
-    <div className="flex min-h-40 gap-5 rounded-xl border-2 border-warn/50 bg-warn/10 p-5">
+    <div className="flex min-h-28 items-center gap-5 rounded-xl border-2 border-warn/50 bg-warn/10 p-5">
       <CloudOff className="size-14 shrink-0 text-warn" strokeWidth={1.75} />
 
       <div className="flex flex-col gap-2">
@@ -130,7 +130,7 @@ function CheckResultCard({ entry, offline }: { entry: HandoverEntry | undefined;
 
   if (!entry) {
     return (
-      <div className="grid min-h-40 place-items-center rounded-xl border-2 border-dashed text-muted-foreground">
+      <div className="grid min-h-28 place-items-center rounded-xl border-2 border-dashed text-muted-foreground">
         Scan each parcel before it goes to the courier
       </div>
     );
@@ -141,7 +141,7 @@ function CheckResultCard({ entry, offline }: { entry: HandoverEntry | undefined;
   const Icon = look.icon;
 
   return (
-    <div key={`${entry.check.id}-${entry.result}`} className={cn('flex min-h-40 gap-5 rounded-xl border-2 p-5 animate-in fade-in-0', look.card)}>
+    <div key={`${entry.check.id}-${entry.result}`} className={cn('flex min-h-28 items-center gap-5 rounded-xl border-2 p-5 animate-in fade-in-0', look.card)}>
       <Icon className={cn('size-14 shrink-0', look.text)} strokeWidth={1.75} />
 
       <div className="flex min-w-0 flex-col gap-2">
@@ -583,45 +583,48 @@ function usePhoneResults(handover: Handover, link: PhoneLink) {
   };
 }
 
-/** The customer emails for the latest submitted handover today. */
-function NotifiedBanner() {
+const NOTICE_TOAST_MS = 5_000;
+
+/** A toast when a submitted handover's customer emails go out. Notices already there when the page opened are not shown again. */
+function useNotifiedToast() {
   const { data } = useDispatchNotices();
 
-  const notice = data?.data[0];
+  const seen = useRef<Set<string> | null>(null);
 
-  if (!data || !notice) {
-    return null;
-  }
+  useEffect(() => {
+    if (!data) {
+      return;
+    }
 
-  const at = formatRelative(notice.notifiedAt);
+    if (!seen.current) {
+      seen.current = new Set(data.data.map(notice => notice.batchId));
+      return;
+    }
 
-  if (notice.sent === 0) {
-    return (
-      <div className="flex items-center gap-3 rounded-lg border border-overdue/40 bg-overdue/5 px-4 py-3 text-sm">
-        <MailWarning className="size-5 shrink-0 text-overdue" />
+    for (const notice of data.data) {
+      if (seen.current.has(notice.batchId)) {
+        continue;
+      }
 
-        <p>
-          <span className="font-semibold">Clients not notified</span> for the {notice.courier} pickup ({at}){notice.error ? `: ${notice.error}` : ''}.
-        </p>
-      </div>
-    );
-  }
+      seen.current.add(notice.batchId);
 
-  return (
-    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-ok/40 bg-ok/10 px-4 py-3 text-sm">
-      <Mail className="size-5 shrink-0 text-ok" />
+      if (notice.sent === 0) {
+        toast.error('Clients not notified', {
+          description: `${notice.courier} pickup${notice.error ? `: ${notice.error}` : ''}.`,
+          duration: NOTICE_TOAST_MS,
+        });
+        continue;
+      }
 
-      <p className="flex-1">
-        <span className="font-semibold">Clients notified.</span> {formatCount(notice.sent)} dispatch {notice.sent === 1 ? 'email' : 'emails'} sent for the{' '}
-        {notice.courier} pickup ({at}){notice.recipient ? ` to ${notice.recipient}` : ''}
-        {notice.failed > 0 ? `; ${formatCount(notice.failed)} failed` : ''}.
-      </p>
+      const emails = `${formatCount(notice.sent)} dispatch ${notice.sent === 1 ? 'email' : 'emails'}`;
 
-      <a href={data.inboxUrl} target="_blank" rel="noreferrer" className="font-medium underline-offset-4 hover:underline">
-        View emails
-      </a>
-    </div>
-  );
+      toast.success('Clients notified', {
+        description: `${emails} sent for the ${notice.courier} pickup${notice.recipient ? ` to ${notice.recipient}` : ''}${notice.failed > 0 ? `; ${formatCount(notice.failed)} failed` : ''}.`,
+        duration: NOTICE_TOAST_MS,
+        action: { label: 'View emails', onClick: () => window.open(data.inboxUrl, '_blank', 'noreferrer') },
+      });
+    }
+  }, [data]);
 }
 
 function PhoneButton({ link }: { link: PhoneLink }) {
@@ -658,6 +661,8 @@ export function DispatchPage() {
 
   checkFromPhone.current = usePhoneResults(handover, link);
 
+  useNotifiedToast();
+
   return (
     <>
       <PageHeader
@@ -678,10 +683,6 @@ export function DispatchPage() {
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         <Totals />
-
-        <div className="px-6 pt-6 empty:hidden">
-          <NotifiedBanner />
-        </div>
 
         <div className="grid gap-6 p-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
           <HandoverPanel handover={handover} />
