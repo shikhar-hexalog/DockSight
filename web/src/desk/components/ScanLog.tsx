@@ -139,7 +139,7 @@ function LogRow({
               onRemove(entry.id);
             }
           }}
-          className="inline-flex size-7 items-center justify-center rounded-md border border-border/80 text-muted-foreground transition hover:border-destructive/60 hover:bg-destructive/5 hover:text-destructive"
+          className="inline-flex size-7 items-center justify-center rounded-sm text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive"
         >
           <Trash2 className="size-3.5" />
         </button>

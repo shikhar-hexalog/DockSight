@@ -34,7 +34,7 @@ function DeskConnection() {
       <button
         type="button"
         onClick={syncNow}
-        className="flex items-center gap-1.5 rounded-full border border-warn/50 bg-warn/10 px-3 py-1 text-xs font-medium"
+        className="flex items-center gap-1.5 text-[13px] font-medium text-warn"
       >
         <CloudOff className="size-3.5" />
         Offline · {formatCount(pendingCount)} scans saved here, will sync
@@ -44,7 +44,7 @@ function DeskConnection() {
 
   if (connection === Connection.SYNCING || pendingCount > 0) {
     return (
-      <span className="flex items-center gap-1.5 px-3 py-1 text-xs text-muted-foreground">
+      <span className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
         <Spinner className="size-3" />
         Syncing {formatCount(pendingCount)}
       </span>
@@ -52,7 +52,7 @@ function DeskConnection() {
   }
 
   return (
-    <button type="button" onClick={syncNow} className="flex items-center gap-1.5 px-3 py-1 text-xs text-muted-foreground">
+    <button type="button" onClick={syncNow} className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground">
       <RefreshCw className="size-3" />
       Expected list updated {formatRelative(lastSyncedAt)}
     </button>
@@ -79,12 +79,12 @@ function countersFor(entries: DeskScanEntry[]): Counter[] {
 /** This handover's tally, small enough to sit in the batch bar. */
 function HandoverCounts({ entries }: { entries: DeskScanEntry[] }) {
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-baseline gap-4">
       {countersFor(entries)
         .filter(counter => counter.label !== 'In this handover')
         .map(counter => (
-          <span key={counter.label} className="flex items-baseline gap-1 rounded-md bg-background px-2 py-0.5 text-xs text-muted-foreground">
-            <span className={cn('font-mono text-sm font-semibold text-foreground tabular-nums', counter.alert && 'text-overdue')}>
+          <span key={counter.label} className="flex items-baseline gap-1 text-[13px] text-muted-foreground">
+            <span className={cn('font-semibold text-ink tabular-nums', counter.alert && 'text-overdue')}>
               {formatCount(counter.value)}
             </span>
             {counter.label.toLowerCase()}
@@ -113,7 +113,7 @@ function DeskWorkspace({ onScan }: { onScan: (code: string) => Promise<ScanResul
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex flex-col gap-3 border-b px-6 py-4">
+      <div className="flex flex-col gap-4 px-8 pt-2 pb-4">
         <BatchBar
           kind={BatchKind.RECEIVE}
           batch={batch!}
@@ -154,7 +154,7 @@ function DeskWorkspace({ onScan }: { onScan: (code: string) => Promise<ScanResul
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
+      <div className="min-h-0 flex-1 overflow-y-auto px-8 pb-4">
         <ScanLog entries={batchEntries} selectedId={tagging?.id ?? null} onSelect={setPickedId} onRemove={removeScan} />
       </div>
     </div>
@@ -166,7 +166,7 @@ function DeskBody({ onScan }: { onScan: (code: string) => Promise<ScanResult | n
 
   if (!batch) {
     return (
-      <div className="p-6">
+      <div className="px-8 pt-4">
         <StartBatchForm kind={BatchKind.RECEIVE} />
       </div>
     );

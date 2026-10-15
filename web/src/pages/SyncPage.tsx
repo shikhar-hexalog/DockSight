@@ -316,7 +316,6 @@ export function SyncPage() {
         title="Uniware sync"
         description="We copy returns from Uniware into our own database and keep them up to date. Uniware is never written to."
         actions={<SyncActions running={data?.running ?? false} />}
-        hideSyncIndicator
       />
 
       <SyncContent />

@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { routes } from '@/routes';
 
 import { HexalogLogo } from './HexalogLogo';
+import { SyncIndicator } from './SyncIndicator';
 
 interface NavItem {
   to: string;
@@ -116,10 +117,13 @@ function Source() {
   const facilities = (data.accounts ?? []).map(a => a.facility).join(' · ');
 
   return (
-    <p className={cn('text-[12px]', data.mode === UniwareMode.LIVE ? 'text-sidebar-foreground/70' : 'text-signal')}>
-      {SOURCE_LABEL[data.mode]}
-      {facilities && <span className="block font-mono text-[11px] opacity-80">{facilities}</span>}
-    </p>
+    <div className="flex flex-col gap-0.5 border-t border-sidebar-border pt-4">
+      <p className={cn('text-[13px] font-medium', data.mode === UniwareMode.LIVE ? 'text-white' : 'text-signal')}>{SOURCE_LABEL[data.mode]}</p>
+
+      {facilities && <p className="text-[12.5px] text-sidebar-foreground">{facilities}</p>}
+
+      <SyncIndicator />
+    </div>
   );
 }
 

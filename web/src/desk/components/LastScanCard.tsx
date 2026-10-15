@@ -22,7 +22,7 @@ function ReturnLine({ entry }: { entry: DeskScanEntry }) {
   return (
     <p className="text-base">
       <Mono className="text-base font-medium">{parts.join(' · ')}</Mono>
-      <span className="text-muted-foreground">
+      <span className="opacity-75">
         {' '}
         · {entry.firstItemName ?? 'Item'}
         {more}
@@ -39,7 +39,7 @@ function EarlierScan({ entry }: { entry: DeskScanEntry }) {
   const by = entry.earlierScanBy ? ` by ${entry.earlierScanBy}` : '';
 
   return (
-    <p className="text-sm text-muted-foreground">
+    <p className="text-sm opacity-75">
       First scanned {formatDateTime(entry.earlierScanAt)}
       {by}
     </p>
@@ -61,7 +61,7 @@ function CopyChip({ label, value }: { label: string; value: string | null }) {
   }
 
   return (
-    <button type="button" onClick={() => void copy()} className="inline-flex items-center gap-1.5 rounded-md border bg-background px-2 py-1 text-xs">
+    <button type="button" onClick={() => void copy()} className="inline-flex items-center gap-1.5 rounded-sm bg-white px-2 py-1 text-xs text-ink">
       <span className="text-muted-foreground">{label}</span>
 
       <Mono className="text-xs font-medium">{value}</Mono>
@@ -90,7 +90,7 @@ function RecreateDetails({ entry }: { entry: DeskScanEntry }) {
 
 function EmptyCard() {
   return (
-    <div className="grid min-h-20 place-items-center rounded-xl border-2 border-dashed text-muted-foreground">Scan the first parcel to start</div>
+    <p className="py-6 text-[17px] text-muted-foreground">Scan the first parcel to start</p>
   );
 }
 
@@ -104,14 +104,14 @@ export function LastScanCard({ entry }: { entry: DeskScanEntry | undefined }) {
   const Icon = style.icon;
 
   return (
-    <div key={entry.id} className={cn('flex gap-4 rounded-xl border-2 px-4 py-3 animate-in fade-in-0 zoom-in-[0.98]', style.card)}>
-      <Icon className={cn('size-9 shrink-0', style.text)} strokeWidth={1.75} />
+    <div key={entry.id} className={cn('flex gap-4 rounded-sm px-5 py-4 animate-in fade-in-0', style.card)}>
+      <Icon className="size-9 shrink-0" strokeWidth={1.75} />
 
       <div className="flex min-w-0 flex-col gap-1">
         <div className="flex flex-wrap items-baseline gap-x-3">
-          <h2 className="text-xl font-semibold tracking-tight">{SCAN_RESULT_LABEL[entry.result]}</h2>
+          <h2 className="font-display text-[24px] font-semibold tracking-[-0.02em]">{SCAN_RESULT_LABEL[entry.result]}</h2>
 
-          <Mono className="text-base text-muted-foreground">{entry.code}</Mono>
+          <Mono className="text-base opacity-75">{entry.code}</Mono>
         </div>
 
         <ReturnLine entry={entry} />

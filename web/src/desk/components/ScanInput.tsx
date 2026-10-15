@@ -1,4 +1,3 @@
-import { ScanBarcode } from 'lucide-react';
 import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
 
 import { cn } from '@/lib/utils';
@@ -63,12 +62,10 @@ export function ScanInput({ disabled, onScan }: ScanInputProps) {
   return (
     <label
       className={cn(
-        'flex items-center gap-4 rounded-xl border-2 bg-background px-5 py-4 transition-colors focus-within:border-foreground',
+        'flex items-center border-b-2 border-input py-3 transition-colors focus-within:border-ink',
         disabled && 'opacity-60'
       )}
     >
-      <ScanBarcode className="size-7 shrink-0 text-muted-foreground" />
-
       <input
         ref={inputRef}
         value={value}
@@ -79,7 +76,7 @@ export function ScanInput({ disabled, onScan }: ScanInputProps) {
         placeholder="Scan an AWB, or type it and press Enter"
         autoComplete="off"
         spellCheck={false}
-        className="min-w-0 flex-1 bg-transparent font-mono text-2xl tracking-tight outline-none placeholder:font-sans placeholder:text-base placeholder:tracking-normal placeholder:text-muted-foreground"
+        className="min-w-0 flex-1 bg-transparent font-mono text-[28px] tracking-tight text-ink outline-none placeholder:font-sans placeholder:text-[17px] placeholder:tracking-normal placeholder:text-muted-foreground"
       />
     </label>
   );

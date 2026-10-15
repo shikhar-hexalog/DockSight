@@ -4,7 +4,7 @@ import { ScanResult } from '@hexabuild/shared';
 
 export interface ResultStyle {
   icon: LucideIcon;
-  /** Card background and border. */
+  /** The last-scan block: a solid fill, with text colour to match. */
   card: string;
   /** Icon and badge text colour. */
   text: string;
@@ -15,31 +15,31 @@ export interface ResultStyle {
 export const RESULT_STYLE: Record<ScanResult, ResultStyle> = {
   [ScanResult.MATCHED]: {
     icon: CircleCheck,
-    card: 'border-ok/40 bg-ok/10',
+    card: 'bg-ok text-white',
     text: 'text-ok',
     instruction: 'Received. Move it to the processing area.',
   },
   [ScanResult.ALREADY_RECEIVED]: {
     icon: Repeat,
-    card: 'border-border bg-muted',
+    card: 'bg-muted text-foreground',
     text: 'text-muted-foreground',
     instruction: 'Already scanned. Nothing to do.',
   },
   [ScanResult.ALREADY_PROCESSED]: {
     icon: CircleSlash,
-    card: 'border-border bg-muted',
+    card: 'bg-muted text-foreground',
     text: 'text-muted-foreground',
     instruction: 'Uniware has already processed this return. Check why the parcel is here again.',
   },
   [ScanResult.CANCELLED_RETURN]: {
     icon: Ban,
-    card: 'border-overdue/40 bg-overdue/10',
+    card: 'bg-overdue text-white',
     text: 'text-overdue',
     instruction: 'Return was cancelled in Uniware. Keep it aside; the reverse pickup must be recreated.',
   },
   [ScanResult.UNEXPECTED]: {
     icon: PackageX,
-    card: 'border-border bg-muted/50',
+    card: 'bg-signal text-ink',
     text: 'text-foreground',
     instruction: 'This parcel is not in the expected list. Keep it aside for review.',
   },

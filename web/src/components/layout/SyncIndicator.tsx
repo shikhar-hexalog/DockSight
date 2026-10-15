@@ -23,7 +23,7 @@ function SyncLabel({ status }: { status: SyncStatusResponse }) {
   }
 
   if (latest?.status === SyncStatus.FAILED) {
-    return <span className="text-overdue">Last sync failed</span>;
+    return <span className="font-medium text-[#ff8a8f]">Last sync failed</span>;
   }
 
   return <span>Synced {formatRelative(status.lastSuccessAt)}</span>;
@@ -39,11 +39,8 @@ export function SyncIndicator() {
   }
 
   return (
-    <div className="flex items-center gap-1.5">
-      <Link
-        to={routes.sync}
-        className="text-[13px] text-muted-foreground transition-colors hover:text-foreground"
-      >
+    <div className="flex items-center gap-1">
+      <Link to={routes.sync} className="text-[12.5px] text-sidebar-foreground transition-colors hover:text-white">
         <SyncLabel status={data} />
       </Link>
 
@@ -52,6 +49,7 @@ export function SyncIndicator() {
           <Button
             size="icon-sm"
             variant="ghost"
+            className="size-6 text-sidebar-foreground hover:bg-sidebar-accent hover:text-white"
             aria-label="Sync now"
             disabled={data.running || runSync.isPending}
             onClick={() => runSync.mutate(SyncKind.INCREMENTAL)}

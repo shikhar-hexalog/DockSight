@@ -1,7 +1,7 @@
 // The current handover at the top of the desk, and closing it:
 // rider's count -> print the sheet -> both sign -> photo of it -> submit.
 
-import { CircleAlert, CircleCheck, FileText, Printer, Truck } from 'lucide-react';
+import { CircleAlert, CircleCheck, FileText, Printer } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -226,18 +226,18 @@ export function BatchBar({ extra, ...handover }: HandoverProps & { extra?: React
   const vehicle = batch.vehicleNo ? ` · ${batch.vehicleNo}` : '';
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-muted/40 px-4 py-2.5">
-      <div className="flex items-center gap-3 text-sm">
-        <Truck className="size-5 text-muted-foreground" />
-
+    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ink pb-3">
+      <div className="flex items-baseline gap-4 text-[13.5px]">
         <span>
-          <span className="font-medium">{batch.courier}</span>
+          <span className="font-semibold text-ink">{batch.courier}</span>
           <span className="text-muted-foreground">
             {vehicle} · {batch.scannedBy} · since {startTime.format(new Date(batch.startedAt))}
           </span>
         </span>
 
-        <span className="rounded-md bg-background px-2 py-0.5 font-mono text-sm font-semibold tabular-nums">{formatCount(count)} parcels</span>
+        <span className="text-muted-foreground">
+          <span className="font-display text-[20px] font-semibold text-ink tabular-nums">{formatCount(count)}</span> parcels
+        </span>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">

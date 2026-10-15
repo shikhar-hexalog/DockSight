@@ -6,7 +6,6 @@ import { ALL_STAGES, MOVEMENT_LABEL, ReturnSort, STAGE_LABEL, type Stage } from 
 import { QueryError } from '@/components/common/QueryError';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ReturnsTable } from '@/components/returns/ReturnsTable';
-import { StageDot } from '@/components/returns/StageBadge';
 import { SearchBox } from '@/components/returns/SearchBox';
 import { TypeFilter } from '@/components/returns/TypeFilter';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -27,7 +26,7 @@ const SEARCH_DEBOUNCE_MS = 250;
 function StageSelect({ value, onChange }: { value: Stage | undefined; onChange: (stage: Stage | undefined) => void }) {
   return (
     <Select value={value ?? ANY_STAGE} onValueChange={next => onChange(ALL_STAGES.find(stage => stage === next))}>
-      <SelectTrigger size="sm" className="w-40 text-[13px]">
+      <SelectTrigger size="sm" className="h-7 gap-1 border-0 bg-transparent px-0 text-[13px] text-muted-foreground shadow-none hover:text-foreground dark:bg-transparent">
         <SelectValue />
       </SelectTrigger>
 
@@ -36,7 +35,6 @@ function StageSelect({ value, onChange }: { value: Stage | undefined; onChange: 
 
         {ALL_STAGES.map(stage => (
           <SelectItem key={stage} value={stage}>
-            <StageDot stage={stage} />
             {STAGE_LABEL[stage]}
           </SelectItem>
         ))}
@@ -47,7 +45,7 @@ function StageSelect({ value, onChange }: { value: Stage | undefined; onChange: 
 
 function TableSkeleton() {
   return (
-    <div className="flex flex-col gap-2 p-6">
+    <div className="flex flex-col gap-2 px-8 py-4">
       {Array.from({ length: 10 }, (_, i) => (
         <Skeleton key={i} className="h-9 w-full" />
       ))}
@@ -61,7 +59,7 @@ function NoMatches() {
 
 function ResultCount({ shown, total }: { shown: number; total: number }) {
   return (
-    <span className="text-xs text-muted-foreground tabular-nums">
+    <span className="text-[12.5px] text-muted-foreground tabular-nums">
       {formatCount(shown)} of {formatCount(total)}
     </span>
   );
@@ -87,7 +85,7 @@ function Results({ stage, q }: { stage: Stage | undefined; q: string }) {
 
   if (error) {
     return (
-      <div className="p-6">
+      <div className="px-8 py-4">
         <QueryError error={error} onRetry={() => void refetch()} />
       </div>
     );
@@ -99,11 +97,11 @@ function Results({ stage, q }: { stage: Stage | undefined; q: string }) {
 
   return (
     <>
-      <div className="flex justify-end px-6 pt-3">
+      <div className="flex justify-end px-8 pb-2">
         <ResultCount shown={data.data.length} total={data.total} />
       </div>
 
-      <div className="px-3">
+      <div className="px-8 pb-6">
         <ReturnsTable rows={data.data} />
       </div>
     </>
@@ -134,7 +132,7 @@ function MovementChip() {
     <button
       type="button"
       onClick={clear}
-      className="flex h-8 items-center gap-1.5 rounded-full border bg-muted px-3 text-xs font-medium hover:bg-muted/70"
+      className="flex items-center gap-1 text-[13px] font-semibold text-ink hover:text-brand"
     >
       {MOVEMENT_LABEL[filter.movement]} {periodLabel(filter.from, filter.to)}
       <X className="size-3.5" />
@@ -153,8 +151,8 @@ export function ReturnsPage() {
     <>
       <PageHeader title="Returns" description="Search any code a worker might scan or a customer might quote." />
 
-      <div className="flex flex-wrap items-center gap-2 border-b px-6 py-3">
-        <SearchBox value={search} onChange={setSearch} />
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-8 pt-2 pb-4">
+        <SearchBox value={search} onChange={setSearch} className="w-64" />
 
         <StageSelect value={stage} onChange={setStage} />
 

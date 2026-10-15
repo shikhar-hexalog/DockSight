@@ -1,7 +1,6 @@
 // Every handover starts here: who is scanning, which delivery partner brought
 // the load, and the vehicle. Asked for each batch, since each is a new handover.
 
-import { Truck } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 
 import { BatchKind } from '@hexabuild/shared';
@@ -16,7 +15,7 @@ const COURIER_LIST_ID = 'desk-couriers';
 function Field({ id, label, hint, children }: { id: string; label: string; hint?: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <Label htmlFor={id} className="text-sm">
+      <Label htmlFor={id} className="text-[13.5px]">
         {label}
         <span className="font-normal text-muted-foreground">{hint}</span>
       </Label>
@@ -61,15 +60,11 @@ export function StartBatchForm({ kind }: { kind: BatchKind }) {
   }
 
   return (
-    <form onSubmit={submit} className="flex max-w-lg flex-col gap-4 rounded-xl border p-6">
-      <div className="flex items-center gap-3">
-        <Truck className="size-6 text-muted-foreground" />
+    <form onSubmit={submit} className="flex max-w-md flex-col gap-5">
+      <div className="border-b border-ink pb-3">
+        <h2 className="font-display text-[20px] font-semibold tracking-[-0.02em] text-ink">{copy.title}</h2>
 
-        <div>
-          <h2 className="text-lg font-semibold">{copy.title}</h2>
-
-          <p className="text-sm text-muted-foreground">{copy.description}</p>
-        </div>
+        <p className="mt-1 text-[13.5px] text-muted-foreground">{copy.description}</p>
       </div>
 
       <Field id="batch-name" label="Who is scanning?">
