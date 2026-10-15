@@ -323,8 +323,6 @@ export interface DispatchDay {
   pulled: number;
   /** Handed over anyway: they'll come back as RTOs. */
   missed: number;
-  /** Submitted pickups where the rider's count didn't match ours. */
-  riderMismatches: number;
 }
 
 export interface DispatchReportResponse {

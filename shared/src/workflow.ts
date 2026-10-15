@@ -58,6 +58,19 @@ export const QcGrade = {
 
 export type QcGrade = (typeof QcGrade)[keyof typeof QcGrade];
 
+/** Where an item goes when no shelf was scanned: the good or bad inventory area. */
+export const DEFAULT_SHELF: Record<QcGrade, string> = {
+  [QcGrade.GOOD]: 'GOOD-INVENTORY',
+  [QcGrade.BAD]: 'BAD-INVENTORY',
+};
+
+/** The scanned shelf, or the default one for the item's grade. */
+export const shelfFor = (shelfCode: string | null, grade: QcGrade) => shelfCode || DEFAULT_SHELF[grade];
+
+/** One label for the whole parcel: the scanned shelf, or each default area used. */
+export const parcelShelf = (shelfCode: string | null, grades: QcGrade[]) =>
+  shelfCode || [...new Set(grades.map(grade => DEFAULT_SHELF[grade]))].join(' / ');
+
 export const QC_GRADE_LABEL: Record<QcGrade, string> = {
   [QcGrade.GOOD]: 'Good',
   [QcGrade.BAD]: 'Bad',
@@ -102,7 +115,8 @@ export interface QcItemInput {
 export interface QcSubmit {
   returnId: string;
   qcBy: string;
-  shelfCode: string;
+  /** Null when no shelf was scanned: items go to the good or bad inventory area. */
+  shelfCode: string | null;
   items: QcItemInput[];
   /** Data URL of a photo of the product. */
   photo: string | null;

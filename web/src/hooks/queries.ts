@@ -27,6 +27,7 @@ export const queryKeys = {
   receipts: (filters: ReceiptsFilters) => ['receipts', filters] as const,
   syncStatus: ['sync-status'] as const,
   holds: ['holds'] as const,
+  dispatchNotices: ['dispatch-notices'] as const,
   aiStatus: ['ai-status'] as const,
   briefs: ['briefs'] as const,
   manifests: ['manifests'] as const,
@@ -77,6 +78,15 @@ export function useHolds() {
     queryKey: queryKeys.holds,
     queryFn: () => api.holds(),
     refetchInterval: HOLDS_REFRESH_MS,
+  });
+}
+
+// Emails go out a moment after a handover is submitted.
+export function useDispatchNotices() {
+  return useQuery({
+    queryKey: queryKeys.dispatchNotices,
+    queryFn: () => api.dispatchNotices(),
+    refetchInterval: LIVE_REFRESH_MS,
   });
 }
 

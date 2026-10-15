@@ -3,13 +3,16 @@ import { z } from 'zod';
 
 import {
   type DispatchHoldsResponse,
+  type DispatchNoticesResponse,
   type HandoverCheckResult,
   type HandoverChecksResponse,
   HandoverResult,
   PulledVia,
 } from '@hexabuild/shared';
 
+import { config } from '../config.ts';
 import { nowIso } from '../lib/time.ts';
+import { listDispatchNotices, notifyDispatch } from '../notify/dispatchEmails.ts';
 import { listHolds, pullHold, recordHandoverCheck } from '../repo/dispatchRepo.ts';
 import type { DispatchGuard } from '../sync/dispatchGuard.ts';
 
@@ -64,6 +67,15 @@ export function dispatchRouter(guard: DispatchGuard) {
     res.json(body);
   });
 
+  // Customer emails sent for today's submitted handovers, newest first.
+  router.get('/dispatch/notices', (req, res) => {
+    const { since } = holdsQuery.parse(req.query);
+
+    const body: DispatchNoticesResponse = { data: listDispatchNotices(since ?? startOfToday()), inboxUrl: config.mail.inboxUrl };
+
+    res.json(body);
+  });
+
   router.post('/dispatch/holds/:id/pull', (req, res) => {
     const { pulledBy } = pullBody.parse(req.body);
 
@@ -80,10 +92,28 @@ export function dispatchRouter(guard: DispatchGuard) {
   router.post('/dispatch/checks', (req, res) => {
     const { checks } = checksBody.parse(req.body);
 
+    const handovers = new Set<string>();
+
     const results = checks.map(raw => {
       const parsed = checkSchema.safeParse(raw);
 
-      return parsed.success ? recordHandoverCheck(parsed.data) : invalidCheck(raw);
+      if (!parsed.success) {
+        return invalidCheck(raw);
+      }
+
+      if (parsed.data.batchId) {
+        handovers.add(parsed.data.batchId);
+      }
+
+      return recordHandoverCheck(parsed.data);
+    });
+
+    // Scans can reach the server after their handover was submitted: email those customers too.
+    // notifyDispatch ignores handovers that aren't submitted yet.
+    setImmediate(() => {
+      for (const batchId of handovers) {
+        void notifyDispatch(batchId).catch(err => console.error('[mail] dispatch emails failed:', err));
+      }
     });
 
     const body: HandoverChecksResponse = { results };

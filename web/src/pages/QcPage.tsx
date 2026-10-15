@@ -1,5 +1,5 @@
-import { ArrowRight, CircleCheck, CircleX, ImageOff, PackageSearch, Sparkles, TriangleAlert } from 'lucide-react';
-import { type FormEvent, type ReactNode, useState } from 'react';
+import { ArrowRight, CircleCheck, CircleX, ImageOff, PackageSearch, RotateCw, Sparkles, TriangleAlert } from 'lucide-react';
+import { type FormEvent, type ReactNode, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import {
@@ -21,6 +21,7 @@ import {
   RemoteTarget,
   type ReturnItem,
   type UniwareQcPayload,
+  shelfFor,
 } from '@hexabuild/shared';
 
 import { Mono } from '@/components/common/Mono';
@@ -47,7 +48,7 @@ type Grades = Record<string, Grade>;
 const Step = {
   PHOTO: 'PHOTO',
   CHECKING: 'CHECKING',
-  /** The AI found a different product: confirm it, or overrule it. */
+  /** A different product came back: it counts down, then goes to bad inventory. */
   MISMATCH: 'MISMATCH',
   /** Condition check by hand (after a match, an unsure answer, or a skip). */
   MANUAL: 'MANUAL',
@@ -56,6 +57,9 @@ const Step = {
 type Step = (typeof Step)[keyof typeof Step];
 
 const GRADES = [QcGrade.GOOD, QcGrade.BAD];
+
+/** Seconds a wrong product is shown before it moves to bad inventory. */
+const MISMATCH_SECONDS = 8;
 
 const GOOD: Grade = { grade: QcGrade.GOOD, reason: null };
 
@@ -86,7 +90,7 @@ const VERDICT_TEXT: Record<MatchVerdict, string> = {
 const VERDICT_NEXT: Record<MatchVerdict, string> = {
   [MatchVerdict.MATCH]: 'Right product. Now check its condition.',
   [MatchVerdict.MISMATCH]: 'This is not what was sold. No need to check further.',
-  [MatchVerdict.UNSURE]: "AI couldn't tell. Check it by hand.",
+  [MatchVerdict.UNSURE]: "Couldn't tell from the photo. Check it by hand.",
 };
 
 function gradesFor(items: ReturnItem[], locked: Set<string>): Grades {
@@ -104,7 +108,7 @@ function previewPayload(target: QcReturn, grades: Grades, shelfCode: string): Un
     saleOrderItems: toInputs(grades).map(item => ({
       code: item.code,
       status: item.grade,
-      shelfCode: shelfCode || '<scan shelf>',
+      shelfCode: shelfFor(shelfCode, item.grade),
       ...(item.reason ? { reason: item.reason } : {}),
     })),
   };
@@ -186,6 +190,66 @@ function ExpectedStrip({ items }: { items: ReturnItem[] }) {
   );
 }
 
+/** Who is doing QC: always shown above the scan box, asked when nobody is set. */
+function QcOperator() {
+  const { scanner, setScanner } = useDesk();
+
+  const [editing, setEditing] = useState(false);
+
+  const [name, setName] = useState(scanner ?? '');
+
+  if (scanner && !editing) {
+    return (
+      <div className="flex items-center gap-3 text-sm">
+        <span className="text-muted-foreground">QC by</span>
+
+        <span className="font-semibold">{scanner}</span>
+
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setName(scanner);
+
+            setEditing(true);
+          }}
+        >
+          Change
+        </Button>
+      </div>
+    );
+  }
+
+  function submit(event: FormEvent) {
+    event.preventDefault();
+
+    if (name.trim()) {
+      setScanner(name.trim());
+
+      setEditing(false);
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="flex flex-wrap items-center gap-2 text-sm">
+      <span className="font-semibold">Who is doing QC?</span>
+
+      <Input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" autoFocus className="h-9 w-56" />
+
+      <Button type="submit" size="sm" disabled={!name.trim()}>
+        {scanner ? 'Save' : 'Start QC'}
+      </Button>
+
+      {scanner && (
+        <Button type="button" variant="ghost" size="sm" onClick={() => setEditing(false)}>
+          Cancel
+        </Button>
+      )}
+    </form>
+  );
+}
+
 function PhotoStep({ target, onPhoto, onSkip }: { target: QcReturn; onPhoto: (photo: string) => void; onSkip: () => void }) {
   return (
     <div className="flex flex-col gap-4 rounded-xl border-2 border-dashed border-stage-expected/40 p-5">
@@ -193,10 +257,10 @@ function PhotoStep({ target, onPhoto, onSkip }: { target: QcReturn; onPhoto: (ph
         <Sparkles className="mt-0.5 size-5 shrink-0 text-stage-expected" />
 
         <div className="min-w-0 flex-1">
-          <p className="font-semibold">Step 1 · AI product check</p>
+          <p className="font-semibold">Step 1 · Smart product check</p>
 
           <p className="text-sm text-muted-foreground">
-            Open the parcel and take one photo of what's inside (not the shipping label). AI compares it with what was sold: product, colour, print.
+            Open the parcel and take one photo of what's inside (not the shipping label). It's compared with what was sold: product, colour, print.
           </p>
         </div>
       </div>
@@ -208,7 +272,7 @@ function PhotoStep({ target, onPhoto, onSkip }: { target: QcReturn; onPhoto: (ph
           <PhotoPicker onPhoto={onPhoto} cameraTitle="Photo of what's inside" size="default" />
 
           <button type="button" onClick={onSkip} className="text-xs text-muted-foreground underline-offset-4 hover:underline">
-            Skip AI, check by hand
+            Skip, check by hand
           </button>
         </div>
       </div>
@@ -224,10 +288,16 @@ function CheckingStep({ photo, target }: { photo: string; target: QcReturn }) {
         Comparing with the catalogue…
       </p>
 
-      <div className="flex flex-wrap items-center gap-4">
-        <img src={photo} alt="What came back" className="size-28 rounded-md border object-cover" />
+      <div className="flex flex-wrap items-start gap-4">
+        <div className="flex w-28 flex-col gap-1">
+          <ItemImage url={photo} size="size-28" />
 
-        <ArrowRight className="size-5 text-muted-foreground" />
+          <span className="text-[11px] text-muted-foreground">What came back</span>
+        </div>
+
+        <div className="flex h-28 items-center">
+          <ArrowRight className="size-5 text-muted-foreground" />
+        </div>
 
         <ExpectedStrip items={target.items} />
       </div>
@@ -280,7 +350,7 @@ function VerdictCard({ check, target, photo, children }: { check: QcMatchCheck; 
         <VerdictIcon verdict={check.verdict} />
 
         <div className="min-w-0 flex-1">
-          <p className="text-lg font-semibold">AI: {MATCH_VERDICT_LABEL[check.verdict]}</p>
+          <p className="text-lg font-semibold">{MATCH_VERDICT_LABEL[check.verdict]}</p>
 
           <p className="text-sm text-foreground">{VERDICT_NEXT[check.verdict]}</p>
         </div>
@@ -299,29 +369,26 @@ function VerdictCard({ check, target, photo, children }: { check: QcMatchCheck; 
   );
 }
 
-function MismatchStep({
-  check,
-  target,
-  photo,
-  onConfirm,
-  onOverrule,
-}: {
-  check: QcMatchCheck;
-  target: QcReturn;
-  photo: string | null;
-  onConfirm: () => void;
-  onOverrule: () => void;
-}) {
+function MismatchStep({ check, target, photo, onDone }: { check: QcMatchCheck; target: QcReturn; photo: string | null; onDone: () => void }) {
+  const [left, setLeft] = useState(MISMATCH_SECONDS);
+
+  useEffect(() => {
+    if (left <= 0) {
+      onDone();
+      return;
+    }
+
+    const timer = setTimeout(() => setLeft(left - 1), 1000);
+
+    return () => clearTimeout(timer);
+  }, [left, onDone]);
+
   return (
     <VerdictCard check={check} target={target} photo={photo}>
-      <div className="flex flex-wrap gap-2">
-        <Button type="button" variant="destructive" onClick={onConfirm}>
-          Confirm wrong product
-        </Button>
+      <div className="flex items-center gap-3">
+        <span className="font-mono text-2xl font-semibold tabular-nums text-overdue">{left}s</span>
 
-        <Button type="button" variant="outline" onClick={onOverrule}>
-          AI is wrong, check by hand
-        </Button>
+        <p className="text-sm font-medium">Moving to bad inventory</p>
       </div>
     </VerdictCard>
   );
@@ -335,12 +402,25 @@ function AiSummary({ check, target, photo }: { check: QcMatchCheck | null; targe
   return <VerdictCard check={check} target={target} photo={photo} />;
 }
 
-function AiNote({ note }: { note: string | null }) {
+function AiNote({ note, onRetry }: { note: string | null; onRetry: (() => void) | null }) {
   if (!note) {
     return null;
   }
 
-  return <p className="rounded-lg border border-warn/50 bg-warn/10 px-4 py-2 text-sm">{note} Check it by hand.</p>;
+  return (
+    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-warn/50 bg-warn/10 px-4 py-2 text-sm">
+      <p className="flex-1">
+        {note} {onRetry ? 'Try again, or check it by hand.' : 'Check it by hand.'}
+      </p>
+
+      {onRetry && (
+        <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+          <RotateCw />
+          Try again
+        </Button>
+      )}
+    </div>
+  );
 }
 
 // ---------------------------------------------- step 2: condition by hand
@@ -392,7 +472,7 @@ function ItemReasons({ value, locked, onReason }: { value: Grade; locked: boolea
 
 function ItemControls({ locked, value, onGrade }: { locked: boolean; value: Grade; onGrade: (grade: QcGrade) => void }) {
   if (locked) {
-    return <span className="text-sm font-semibold text-overdue">Bad · Wrong item (AI check)</span>;
+    return <span className="text-sm font-semibold text-overdue">Bad · Wrong item</span>;
   }
 
   return <GradeButtons value={value.grade} onChange={onGrade} />;
@@ -490,28 +570,25 @@ interface ManualStepProps {
   locked: Set<string>;
   check: QcMatchCheck | null;
   aiNote: string | null;
+  onRetry: (() => void) | null;
   photo: string | null;
   onGrade: (code: string, value: Grade) => void;
-  onSave: (qcBy: string, shelf: string) => void;
+  onSave: (shelf: string | null) => void;
   saving: boolean;
 }
 
-function ManualStep({ target, grades, locked, check, aiNote, photo, onGrade, onSave, saving }: ManualStepProps) {
-  const { scanner } = useDesk();
-
+function ManualStep({ target, grades, locked, check, aiNote, onRetry, photo, onGrade, onSave, saving }: ManualStepProps) {
   const [shelf, setShelf] = useState('');
-
-  const [name, setName] = useState(scanner ?? '');
 
   const shelfCode = shelf.trim().toUpperCase();
 
-  const ready = Boolean(target.dockReceivedAt) && shelfCode !== '' && name.trim() !== '' && !missingReason(grades) && !saving;
+  const ready = Boolean(target.dockReceivedAt) && !missingReason(grades) && !saving;
 
   function submit(event: FormEvent) {
     event.preventDefault();
 
     if (ready) {
-      onSave(name.trim(), shelfCode);
+      onSave(shelfCode || null);
     }
   }
 
@@ -519,9 +596,9 @@ function ManualStep({ target, grades, locked, check, aiNote, photo, onGrade, onS
     <form onSubmit={submit} className="flex flex-col gap-3">
       <AiSummary check={check} target={target} photo={photo} />
 
-      <AiNote note={aiNote} />
+      <AiNote note={aiNote} onRetry={onRetry} />
 
-      <p className="text-sm font-semibold">{locked.size === target.items.length ? 'Put it on the shelf' : 'Step 2 · Condition check'}</p>
+      <p className="text-sm font-semibold">{locked.size === target.items.length ? 'Moving to bad inventory' : 'Step 2 · Condition check'}</p>
 
       {target.items.map(item => (
         <ItemRow
@@ -534,12 +611,10 @@ function ManualStep({ target, grades, locked, check, aiNote, photo, onGrade, onS
       ))}
 
       <div className="flex flex-wrap items-center gap-2">
-        <Input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" className="h-10 w-40" />
-
         <Input
           value={shelf}
           onChange={e => setShelf(e.target.value)}
-          placeholder="Scan shelf / bin (putaway)"
+          placeholder="Scan shelf / bin (optional)"
           className="h-10 w-60 font-mono uppercase placeholder:font-sans placeholder:normal-case"
         />
 
@@ -554,7 +629,7 @@ function ManualStep({ target, grades, locked, check, aiNote, photo, onGrade, onS
 }
 
 function QcFlow({ target, onDone }: { target: QcReturn; onDone: (record: QcRecord) => void }) {
-  const { setScanner } = useDesk();
+  const { scanner } = useDesk();
 
   const runCheck = useQcCheck();
 
@@ -568,6 +643,8 @@ function QcFlow({ target, onDone }: { target: QcReturn; onDone: (record: QcRecor
 
   const [aiNote, setAiNote] = useState<string | null>(null);
 
+  const [aiFailed, setAiFailed] = useState(false);
+
   const [locked, setLocked] = useState<Set<string>>(new Set());
 
   const [grades, setGrades] = useState<Grades>(() => gradesFor(target.items, new Set()));
@@ -576,6 +653,8 @@ function QcFlow({ target, onDone }: { target: QcReturn; onDone: (record: QcRecor
     setPhoto(next);
 
     setStep(Step.CHECKING);
+
+    setAiFailed(false);
 
     runCheck.mutate(
       { returnId: target.id, photo: next },
@@ -592,7 +671,9 @@ function QcFlow({ target, onDone }: { target: QcReturn; onDone: (record: QcRecor
           setStep(mismatch ? Step.MISMATCH : Step.MANUAL);
         },
         onError: error => {
-          setAiNote(`AI check failed: ${error.message}.`);
+          setAiNote(`The smart check didn't run: ${error.message}.`);
+
+          setAiFailed(true);
 
           setStep(Step.MANUAL);
         },
@@ -614,11 +695,13 @@ function QcFlow({ target, onDone }: { target: QcReturn; onDone: (record: QcRecor
     setStep(Step.MANUAL);
   }
 
-  function save(qcBy: string, shelfCode: string) {
-    setScanner(qcBy);
+  function save(shelfCode: string | null) {
+    if (!scanner) {
+      return;
+    }
 
     submit.mutate(
-      { returnId: target.id, qcBy, shelfCode, items: toInputs(grades), photo, aiCheck: check },
+      { returnId: target.id, qcBy: scanner, shelfCode, items: toInputs(grades), photo, aiCheck: check },
       {
         onSuccess: record => {
           playSound(TONE_SOUND[OutcomeTone.GOOD]);
@@ -632,6 +715,11 @@ function QcFlow({ target, onDone }: { target: QcReturn; onDone: (record: QcRecor
     );
   }
 
+  // A phone scan can open a parcel before anyone has said who is doing QC.
+  if (!scanner) {
+    return <p className="rounded-lg border border-warn/50 bg-warn/10 px-4 py-2 text-sm">Enter who is doing QC above to start.</p>;
+  }
+
   if (step === Step.PHOTO) {
     return <PhotoStep target={target} onPhoto={onPhoto} onSkip={() => setStep(Step.MANUAL)} />;
   }
@@ -641,7 +729,7 @@ function QcFlow({ target, onDone }: { target: QcReturn; onDone: (record: QcRecor
   }
 
   if (step === Step.MISMATCH) {
-    return <MismatchStep check={check!} target={target} photo={photo} onConfirm={confirmMismatch} onOverrule={() => setStep(Step.MANUAL)} />;
+    return <MismatchStep check={check!} target={target} photo={photo} onDone={confirmMismatch} />;
   }
 
   return (
@@ -651,6 +739,7 @@ function QcFlow({ target, onDone }: { target: QcReturn; onDone: (record: QcRecor
       locked={locked}
       check={check}
       aiNote={aiNote}
+      onRetry={aiFailed && photo ? () => onPhoto(photo) : null}
       photo={photo}
       onGrade={(code, value) => setGrades(current => ({ ...current, [code]: value }))}
       onSave={save}
@@ -682,7 +771,7 @@ function Workspace({ lookup, onDone }: { lookup: QcLookupResponse | null; onDone
         <p className="text-sm font-medium">Scan a parcel to start QC</p>
 
         <p className="max-w-md text-sm text-muted-foreground">
-          AI checks it's the right product first. A wrong product fails right there; a right one goes to a quick condition check, then the shelf.
+          A smart check confirms it's the right product first. A wrong product fails right there; a right one goes to a quick condition check, then the shelf.
         </p>
       </div>
     );
@@ -758,7 +847,7 @@ function RecentQc() {
           <TableRow>
             <TableHead>When</TableHead>
             <TableHead>Return</TableHead>
-            <TableHead>AI check</TableHead>
+            <TableHead>Smart check</TableHead>
             <TableHead>Result</TableHead>
             <TableHead>Shelf</TableHead>
             <TableHead>By</TableHead>
@@ -825,6 +914,8 @@ function useQcScan() {
 }
 
 export function QcPage() {
+  const { scanner } = useDesk();
+
   const { current, setCurrent, open, pending } = useQcScan();
 
   const link = usePhoneLink(RemoteTarget.QC, ({ id, code }) => {
@@ -844,12 +935,14 @@ export function QcPage() {
     <>
       <PageHeader
         title="QC station"
-        description="AI checks it's the right product, you check its condition, then the shelf. Recorded here; Uniware is not changed."
+        description="A smart check confirms it's the right product, you check its condition, then the shelf. Recorded here; Uniware is not changed."
         actions={<PhoneScannerButton link={link} />}
       />
 
       <div className="flex max-w-5xl flex-col gap-6 px-6 py-6">
-        <ScanInput disabled={pending} onScan={code => void open(code)} />
+        <QcOperator />
+
+        <ScanInput disabled={pending || !scanner} onScan={code => void open(code)} />
 
         <Workspace lookup={current} onDone={onDone} />
 

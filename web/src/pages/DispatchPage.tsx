@@ -2,7 +2,7 @@ import { CircleCheck, CloudOff, OctagonX, RefreshCw, Repeat, ShieldAlert, Trash2
 import { useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
-import { BatchKind, DeskOpKind, type DispatchHold, HandoverResult, HoldStatus, PulledVia, RemoteTarget } from '@hexabuild/shared';
+import { BatchKind, DeskOpKind, type DispatchHold, type DispatchNotice, HandoverResult, HoldStatus, PulledVia, RemoteTarget } from '@hexabuild/shared';
 
 import { type ExportFile, ExportMenu } from '@/components/common/ExportMenu';
 import { Mono } from '@/components/common/Mono';
@@ -20,7 +20,7 @@ import { type PhoneLink, usePhoneLink } from '@/desk/phone/usePhoneLink';
 import { type HandoverEntry, useHandoverCheck } from '@/desk/useHandoverCheck';
 import { uuid } from '@/desk/uuid';
 import { useDemoMode } from '@/hooks/useDemoMode';
-import { useClearDemoCancellations, useDemoCancellation, useOverview, usePullHold, useRunGuard } from '@/hooks/queries';
+import { useClearDemoCancellations, useDemoCancellation, useDispatchNotices, useOverview, usePullHold, useRunGuard } from '@/hooks/queries';
 import { exportUrls } from '@/lib/api';
 import { formatAge, formatCount, formatDateTime, formatRelative } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -86,7 +86,7 @@ function HoldFacts({ hold }: { hold: DispatchHold | null }) {
 
 function CheckingCard({ code }: { code: string }) {
   return (
-    <div className="flex min-h-40 items-center gap-5 rounded-xl border-2 p-5">
+    <div className="flex min-h-28 items-center gap-5 rounded-xl border-2 p-5">
       <Spinner className="size-10 shrink-0" />
 
       <div className="flex flex-col gap-1">
@@ -102,7 +102,7 @@ function CheckingCard({ code }: { code: string }) {
 
 function OfflineClearCard({ code }: { code: string }) {
   return (
-    <div className="flex min-h-40 gap-5 rounded-xl border-2 border-warn/50 bg-warn/10 p-5">
+    <div className="flex min-h-28 items-center gap-5 rounded-xl border-2 border-warn/50 bg-warn/10 p-5">
       <CloudOff className="size-14 shrink-0 text-warn" strokeWidth={1.75} />
 
       <div className="flex flex-col gap-2">
@@ -130,7 +130,7 @@ function CheckResultCard({ entry, offline }: { entry: HandoverEntry | undefined;
 
   if (!entry) {
     return (
-      <div className="grid min-h-40 place-items-center rounded-xl border-2 border-dashed text-muted-foreground">
+      <div className="grid min-h-28 place-items-center rounded-xl border-2 border-dashed text-muted-foreground">
         Scan each parcel before it goes to the courier
       </div>
     );
@@ -141,7 +141,7 @@ function CheckResultCard({ entry, offline }: { entry: HandoverEntry | undefined;
   const Icon = look.icon;
 
   return (
-    <div key={`${entry.check.id}-${entry.result}`} className={cn('flex min-h-40 gap-5 rounded-xl border-2 p-5 animate-in fade-in-0', look.card)}>
+    <div key={`${entry.check.id}-${entry.result}`} className={cn('flex min-h-28 items-center gap-5 rounded-xl border-2 p-5 animate-in fade-in-0', look.card)}>
       <Icon className={cn('size-14 shrink-0', look.text)} strokeWidth={1.75} />
 
       <div className="flex min-w-0 flex-col gap-2">
@@ -583,6 +583,53 @@ function usePhoneResults(handover: Handover, link: PhoneLink) {
   };
 }
 
+const NOTICE_TOAST_MS = 5_000;
+
+/** A notice changes when more of its emails go out (late scans, a retry that worked). */
+const noticeKey = (notice: DispatchNotice) => `${notice.batchId}:${notice.sent}:${notice.failed}`;
+
+/** A toast when a submitted handover's customer emails go out. What was already there when the page opened is not shown again. */
+function useNotifiedToast() {
+  const { data } = useDispatchNotices();
+
+  const seen = useRef<Set<string> | null>(null);
+
+  useEffect(() => {
+    if (!data) {
+      return;
+    }
+
+    if (!seen.current) {
+      seen.current = new Set(data.data.map(noticeKey));
+      return;
+    }
+
+    for (const notice of data.data) {
+      if (seen.current.has(noticeKey(notice))) {
+        continue;
+      }
+
+      seen.current.add(noticeKey(notice));
+
+      if (notice.sent === 0) {
+        toast.error('Clients not notified', {
+          description: `${notice.courier} pickup${notice.error ? `: ${notice.error}` : ''}.`,
+          duration: NOTICE_TOAST_MS,
+        });
+        continue;
+      }
+
+      const emails = `${formatCount(notice.sent)} dispatch ${notice.sent === 1 ? 'email' : 'emails'}`;
+
+      toast.success('Clients notified', {
+        description: `${emails} sent for the ${notice.courier} pickup${notice.recipient ? ` to ${notice.recipient}` : ''}${notice.failed > 0 ? `; ${formatCount(notice.failed)} failed` : ''}.`,
+        duration: NOTICE_TOAST_MS,
+        action: { label: 'View emails', onClick: () => window.open(data.inboxUrl, '_blank', 'noreferrer') },
+      });
+    }
+  }, [data]);
+}
+
 function PhoneButton({ link }: { link: PhoneLink }) {
   const { dispatchBatch } = useDesk();
 
@@ -616,6 +663,8 @@ export function DispatchPage() {
   const link = usePhoneLink(RemoteTarget.DISPATCH, ({ id, code }) => checkFromPhone.current(id, code));
 
   checkFromPhone.current = usePhoneResults(handover, link);
+
+  useNotifiedToast();
 
   return (
     <>

@@ -177,6 +177,17 @@ export const config = {
     errorBackoffMs: 10_000,
     maxConcurrency: Number(env('UNICOMMERCE_MAX_CONCURRENCY') ?? 5),
   },
+  // Dispatch emails. Defaults point at Mailpit on this machine (SMTP 1025, inbox 8025).
+  mail: {
+    host: env('SMTP_HOST') ?? 'localhost',
+    port: Number(env('SMTP_PORT') ?? 1025),
+    user: env('SMTP_USER'),
+    pass: env('SMTP_PASS'),
+    from: env('MAIL_FROM') ?? 'warehouse@hexalog.in',
+    // Demo: every customer email goes to this one address. Unset, none are sent.
+    demoTo: env('MAIL_DEMO_TO'),
+    inboxUrl: env('MAIL_INBOX_URL') ?? 'http://localhost:8025',
+  },
   guard: {
     // Cancellations are checked often: a parcel can be handed over within minutes.
     intervalMinutes: Number(env('GUARD_INTERVAL_MIN') ?? 2),

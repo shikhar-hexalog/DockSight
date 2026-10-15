@@ -23,7 +23,7 @@ export const EXPLAIN = {
   manifested: 'In Uniware but not on the shelf yet: acknowledged (RETURN_ACKNOWLEDGED), or returned and waiting for putaway to close.',
   closedToday:
     "Putaway closed today: stock back in inventory. 'No dock scan' = never scanned at our desk or listed in the receiving sheet, usually parcels still received the old way.",
-  shiftBrief: 'An AI-written summary for the shift change, made from the live numbers. Click to read the full note.',
+  shiftBrief: 'A smart summary for the shift change, made from the live numbers. Click to read the full note.',
 
   // Overview panels
   pendingAges: `Every return in Pending in Uniware, grouped by how long it has been at our dock without being processed. Over 1 working day counts as late. ${TIME_NOTE}`,
@@ -51,7 +51,7 @@ export const EXPLAIN = {
   legProcessedPutaway: `Processed in Uniware to putaway closed (inventory received: stock back). ${TIME_NOTE}`,
   legInwardPutaway: `The whole warehouse time: inward to putaway closed. ${TIME_NOTE}`,
   dispatch:
-    "Per day at dispatch: courier pickups, parcels handed over after passing the cancellation check, cancelled orders caught, how many were pulled out (RTOs avoided) or handed over anyway (they'll come back as RTOs), and pickups where the rider's count didn't match ours.",
+    "Per day at dispatch: courier pickups, parcels handed over after passing the cancellation check, cancelled orders caught, how many were pulled out (RTOs avoided) or handed over anyway (they'll come back as RTOs).",
   volume: 'For each inward date: of the parcels that came in that day, how many are processed in Uniware and how many are still waiting.',
   tat: `For the parcels that came in each day: time from arriving at our dock to being processed in Uniware (only the ones processed so far). Median = half were faster. Slowest 1 in 10 = 90% were faster than this. ${TIME_NOTE}`,
   tatByCourier:

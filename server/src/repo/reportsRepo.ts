@@ -412,12 +412,6 @@ export function getDispatchReport(filters: Omit<TatReportFilters, 'clock'>): Dis
       cancellationsCaught: count(`SELECT COUNT(*) AS n FROM dispatch_holds WHERE ${between('detected_at')}`, window),
       pulled: count(`SELECT COUNT(*) AS n FROM dispatch_holds WHERE status = '${HoldStatus.PULLED}' AND ${between('pulled_at')}`, window),
       missed: count(`SELECT COUNT(*) AS n FROM dispatch_holds WHERE status = '${HoldStatus.MISSED}' AND ${between('missed_at')}`, window),
-      riderMismatches: count(
-        `SELECT COUNT(*) AS n FROM receiving_batches b
-         WHERE b.kind = '${BatchKind.DISPATCH}' AND b.courier_count IS NOT NULL AND ${between('b.submitted_at')}
-           AND b.courier_count != (SELECT COUNT(*) FROM handover_checks hc WHERE hc.batch_id = b.id AND hc.result = '${HandoverResult.CLEAR}')`,
-        window
-      ),
     };
   });
 

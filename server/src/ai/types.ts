@@ -1,5 +1,5 @@
 // The AI engine's contract. Callers describe the task and the JSON shape they
-// want back; a provider (the Claude Code CLI, or a mock) does the rest.
+// want back; a provider (Gemini, the Claude Code CLI, or a mock) does the rest.
 
 import { AiProviderName } from '@hexabuild/shared';
 

@@ -28,6 +28,7 @@ import type {
   DeskManifest,
   DispatchHold,
   DispatchHoldsResponse,
+  DispatchNoticesResponse,
   GuardStatus,
   HandoverCheck,
   HandoverChecksResponse,
@@ -156,6 +157,8 @@ export const api = {
     }),
 
   holds: (since?: string) => request<DispatchHoldsResponse>(`/dispatch/holds${toQuery({ since })}`),
+
+  dispatchNotices: () => request<DispatchNoticesResponse>('/dispatch/notices'),
 
   pullHold: (id: string, pulledBy: string) =>
     request<DispatchHold>(`/dispatch/holds/${encodeURIComponent(id)}/pull`, {
