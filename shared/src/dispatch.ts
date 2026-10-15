@@ -50,6 +50,25 @@ export interface DispatchHold {
   missedAt: string | null;
 }
 
+/** The customer emails sent for one submitted dispatch handover. */
+export interface DispatchNotice {
+  batchId: string;
+  courier: string;
+  /** Where the emails went (the demo inbox). */
+  recipient: string | null;
+  sent: number;
+  failed: number;
+  /** Why emails weren't sent, when some or all failed. */
+  error: string | null;
+  notifiedAt: string;
+}
+
+export interface DispatchNoticesResponse {
+  data: DispatchNotice[];
+  /** Where the sent emails can be seen (Mailpit in the demo). */
+  inboxUrl: string;
+}
+
 export interface DispatchHoldsResponse {
   data: DispatchHold[];
 }

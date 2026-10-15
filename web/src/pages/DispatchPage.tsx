@@ -1,4 +1,4 @@
-import { CircleCheck, CloudOff, OctagonX, RefreshCw, Repeat, ShieldAlert, Trash2, type LucideIcon } from 'lucide-react';
+import { CircleCheck, CloudOff, Mail, MailWarning, OctagonX, RefreshCw, Repeat, ShieldAlert, Trash2, type LucideIcon } from 'lucide-react';
 import { useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
@@ -20,7 +20,7 @@ import { type PhoneLink, usePhoneLink } from '@/desk/phone/usePhoneLink';
 import { type HandoverEntry, useHandoverCheck } from '@/desk/useHandoverCheck';
 import { uuid } from '@/desk/uuid';
 import { useDemoMode } from '@/hooks/useDemoMode';
-import { useClearDemoCancellations, useDemoCancellation, useOverview, usePullHold, useRunGuard } from '@/hooks/queries';
+import { useClearDemoCancellations, useDemoCancellation, useDispatchNotices, useOverview, usePullHold, useRunGuard } from '@/hooks/queries';
 import { exportUrls } from '@/lib/api';
 import { formatAge, formatCount, formatDateTime, formatRelative } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -583,6 +583,47 @@ function usePhoneResults(handover: Handover, link: PhoneLink) {
   };
 }
 
+/** The customer emails for the latest submitted handover today. */
+function NotifiedBanner() {
+  const { data } = useDispatchNotices();
+
+  const notice = data?.data[0];
+
+  if (!data || !notice) {
+    return null;
+  }
+
+  const at = formatRelative(notice.notifiedAt);
+
+  if (notice.sent === 0) {
+    return (
+      <div className="flex items-center gap-3 rounded-lg border border-overdue/40 bg-overdue/5 px-4 py-3 text-sm">
+        <MailWarning className="size-5 shrink-0 text-overdue" />
+
+        <p>
+          <span className="font-semibold">Clients not notified</span> for the {notice.courier} pickup ({at}){notice.error ? `: ${notice.error}` : ''}.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-ok/40 bg-ok/10 px-4 py-3 text-sm">
+      <Mail className="size-5 shrink-0 text-ok" />
+
+      <p className="flex-1">
+        <span className="font-semibold">Clients notified.</span> {formatCount(notice.sent)} dispatch {notice.sent === 1 ? 'email' : 'emails'} sent for the{' '}
+        {notice.courier} pickup ({at}){notice.recipient ? ` to ${notice.recipient}` : ''}
+        {notice.failed > 0 ? `; ${formatCount(notice.failed)} failed` : ''}.
+      </p>
+
+      <a href={data.inboxUrl} target="_blank" rel="noreferrer" className="font-medium underline-offset-4 hover:underline">
+        View emails
+      </a>
+    </div>
+  );
+}
+
 function PhoneButton({ link }: { link: PhoneLink }) {
   const { dispatchBatch } = useDesk();
 
@@ -637,6 +678,10 @@ export function DispatchPage() {
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         <Totals />
+
+        <div className="px-6 pt-6 empty:hidden">
+          <NotifiedBanner />
+        </div>
 
         <div className="grid gap-6 p-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
           <HandoverPanel handover={handover} />

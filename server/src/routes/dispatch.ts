@@ -3,13 +3,16 @@ import { z } from 'zod';
 
 import {
   type DispatchHoldsResponse,
+  type DispatchNoticesResponse,
   type HandoverCheckResult,
   type HandoverChecksResponse,
   HandoverResult,
   PulledVia,
 } from '@hexabuild/shared';
 
+import { config } from '../config.ts';
 import { nowIso } from '../lib/time.ts';
+import { listDispatchNotices } from '../notify/dispatchEmails.ts';
 import { listHolds, pullHold, recordHandoverCheck } from '../repo/dispatchRepo.ts';
 import type { DispatchGuard } from '../sync/dispatchGuard.ts';
 
@@ -60,6 +63,15 @@ export function dispatchRouter(guard: DispatchGuard) {
     const { since } = holdsQuery.parse(req.query);
 
     const body: DispatchHoldsResponse = { data: listHolds(since ?? startOfToday()) };
+
+    res.json(body);
+  });
+
+  // Customer emails sent for today's submitted handovers, newest first.
+  router.get('/dispatch/notices', (req, res) => {
+    const { since } = holdsQuery.parse(req.query);
+
+    const body: DispatchNoticesResponse = { data: listDispatchNotices(since ?? startOfToday()), inboxUrl: config.mail.inboxUrl };
 
     res.json(body);
   });
