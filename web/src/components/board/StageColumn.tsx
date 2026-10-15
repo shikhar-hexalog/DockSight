@@ -1,9 +1,9 @@
-import { ReturnSort, STAGE_LABEL, type ScopeFilters, Stage, type StageCount } from '@hexabuild/shared';
+import { isLate, ReturnSort, type ReturnSummary, STAGE_LABEL, type ScopeFilters, Stage, type StageCount } from '@hexabuild/shared';
 
 import { QueryError } from '@/components/common/QueryError';
-import { StageDot } from '@/components/returns/StageBadge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useReturns } from '@/hooks/queries';
+import { useClock } from '@/hooks/useClock';
 import { useReturnSheet } from '@/hooks/useReturnSheet';
 import { useTypeFilter } from '@/hooks/useTypeFilter';
 import { formatCount } from '@/lib/format';
@@ -25,25 +25,13 @@ const COLUMN_SORT: Partial<Record<Stage, ReturnSort>> = {
   [Stage.CANCELLED]: ReturnSort.RECENT,
 };
 
-function LateChip({ count }: { count: number }) {
-  if (count === 0) {
-    return null;
-  }
-
-  return (
-    <span className="rounded-[4px] bg-overdue/10 px-1.5 py-0.5 font-mono text-[10px] font-medium text-overdue tabular-nums">
-      {formatCount(count)} late
-    </span>
-  );
-}
-
 function ShownOfTotal({ shown, total }: { shown: number; total: number }) {
   if (shown >= total) {
     return null;
   }
 
   return (
-    <p className="pt-1 text-center text-[11px] text-muted-foreground">
+    <p className="py-2.5 text-[12.5px] text-muted-foreground">
       Latest {formatCount(shown)} of {formatCount(total)}
     </p>
   );
@@ -51,35 +39,73 @@ function ShownOfTotal({ shown, total }: { shown: number; total: number }) {
 
 function ColumnHeader({ stage, count }: { stage: Stage; count: StageCount | undefined }) {
   return (
-    <div className="flex flex-col gap-0.5 px-1 pb-2">
-      <div className="flex items-center gap-2">
-        <StageDot stage={stage} className="size-2" />
+    <div className="border-b border-ink pb-2">
+      <div className="flex items-baseline justify-between">
+        <h2 className="font-display text-[15px] font-semibold text-ink">{STAGE_LABEL[stage]}</h2>
 
-        <h2 className="text-[13px] font-medium">{STAGE_LABEL[stage]}</h2>
-
-        <span className="font-mono text-[12px] text-muted-foreground tabular-nums">{formatCount(count?.count ?? 0)}</span>
-
-        <span className="ml-auto">
-          <LateChip count={count?.overSla ?? 0} />
+        <span className="font-display text-[24px] leading-none font-semibold tracking-[-0.03em] text-ink tabular-nums">
+          {formatCount(count?.count ?? 0)}
         </span>
       </div>
 
-      <p className="text-[11px] text-muted-foreground">{STAGE_HINT[stage]}</p>
+      {/* Two lines reserved so every column's rule lines up, however long its hint. */}
+      <p className="mt-1 line-clamp-2 min-h-[2lh] text-[12px] leading-[1.5] text-muted-foreground">{STAGE_HINT[stage]}</p>
     </div>
   );
 }
 
+/** Heads the late rows, in the words of the old "N late" chip. */
+function LateLabel({ count }: { count: number }) {
+  return <h3 className="pt-3.5 pb-0.5 text-[12px] font-medium text-overdue">{formatCount(count)} late</h3>;
+}
+
 function ColumnSkeleton() {
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-3 pt-3">
       {Array.from({ length: 4 }, (_, i) => (
-        <Skeleton key={i} className="h-[84px] w-full" />
+        <Skeleton key={i} className="h-[58px] w-full" />
       ))}
     </div>
   );
 }
 
-function ColumnCards({ stage, scope }: { stage: Stage; scope: ScopeFilters }) {
+function Rows({ rows, onOpen }: { rows: ReturnSummary[]; onOpen: (id: string) => void }) {
+  return rows.map(summary => <ReturnCard key={summary.id} summary={summary} onOpen={onOpen} />);
+}
+
+/**
+ * Rows past the stage's time limit come first, under their own heading, so lateness needs no decoration.
+ * Headings count the whole stage (from the pipeline), not just the rows loaded.
+ */
+function GroupedRows({ rows, count, onOpen }: { rows: ReturnSummary[]; count: StageCount | undefined; onOpen: (id: string) => void }) {
+  const { mode, schedule } = useClock();
+
+  const now = Date.now();
+
+  const late = rows.filter(r => isLate(r.stage, r.stageChangedAt, now, mode, schedule));
+
+  if (late.length === 0) {
+    return <Rows rows={rows} onOpen={onOpen} />;
+  }
+
+  const onTime = rows.filter(r => !late.includes(r));
+
+  return (
+    <>
+      <LateLabel count={count?.overSla ?? late.length} />
+      <Rows rows={late} onOpen={onOpen} />
+
+      {onTime.length > 0 && (
+        <>
+          <div className="mt-3 border-t border-ink/30" />
+          <Rows rows={onTime} onOpen={onOpen} />
+        </>
+      )}
+    </>
+  );
+}
+
+function ColumnRows({ stage, count, scope }: { stage: Stage; count: StageCount | undefined; scope: ScopeFilters }) {
   const { type } = useTypeFilter();
 
   const { open } = useReturnSheet();
@@ -101,27 +127,25 @@ function ColumnCards({ stage, scope }: { stage: Stage; scope: ScopeFilters }) {
   }
 
   if (data.data.length === 0) {
-    return <div className="grid h-24 place-items-center rounded-md border border-dashed text-xs text-muted-foreground">Nothing here</div>;
+    return <p className="py-3 text-[13px] text-muted-foreground">Nothing here</p>;
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      {data.data.map(summary => (
-        <ReturnCard key={summary.id} summary={summary} onOpen={open} />
-      ))}
+    <>
+      <GroupedRows rows={data.data} count={count} onOpen={open} />
 
       <ShownOfTotal shown={data.data.length} total={data.total} />
-    </div>
+    </>
   );
 }
 
 export function StageColumn({ stage, count, scope }: { stage: Stage; count: StageCount | undefined; scope: ScopeFilters }) {
   return (
-    <section className="flex w-[300px] shrink-0 flex-col rounded-lg bg-muted/50 p-2">
+    <section className="flex min-w-[260px] flex-1 flex-col">
       <ColumnHeader stage={stage} count={count} />
 
-      <div className="-mx-2 min-h-0 flex-1 overflow-y-auto px-2 pb-1">
-        <ColumnCards stage={stage} scope={scope} />
+      <div className="min-h-0 flex-1 overflow-y-auto pb-2">
+        <ColumnRows stage={stage} count={count} scope={scope} />
       </div>
     </section>
   );

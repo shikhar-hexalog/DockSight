@@ -1,16 +1,3 @@
-import {
-  ArrowLeftRight,
-  ChartColumn,
-  Columns3,
-  Hourglass,
-  LayoutDashboard,
-  MessageSquareText,
-  type LucideIcon,
-  PackageX,
-  Rows3,
-  ScanBarcode,
-  Truck,
-} from 'lucide-react';
 import { NavLink } from 'react-router';
 
 import { type OverviewResponse, UniwareMode } from '@hexabuild/shared';
@@ -20,12 +7,15 @@ import { formatCount } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { routes } from '@/routes';
 
+import { HexalogLogo } from './HexalogLogo';
+
 interface NavItem {
   to: string;
   label: string;
-  icon: LucideIcon;
   /** A live count shown beside the label, e.g. how many are pending. */
   count?: (overview: OverviewResponse) => number;
+  /** The count is work someone must do before a deadline: shown in the signal colour. */
+  urgent?: boolean;
 }
 
 interface NavGroup {
@@ -37,37 +27,31 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Today',
     items: [
-      { to: routes.overview, label: 'Overview', icon: LayoutDashboard },
-      { to: routes.board, label: 'Board', icon: Columns3 },
-      { to: routes.receive, label: 'Receive', icon: ScanBarcode },
-      { to: routes.dispatch, label: 'Dispatch', icon: Truck, count: o => o.dispatch.open },
-      { to: routes.pending, label: 'Pending in Uniware', icon: Hourglass, count: o => o.pending.total },
-      { to: routes.exceptions, label: 'Set aside', icon: PackageX, count: o => o.exceptionsOpen },
+      { to: routes.overview, label: 'Overview' },
+      { to: routes.board, label: 'Board' },
+      { to: routes.receive, label: 'Receive' },
+      { to: routes.dispatch, label: 'Dispatch', count: o => o.dispatch.open, urgent: true },
+      { to: routes.pending, label: 'Pending in Uniware', count: o => o.pending.total },
+      { to: routes.exceptions, label: 'Set aside', count: o => o.exceptionsOpen },
     ],
   },
   {
     label: 'Look up',
     items: [
-      { to: routes.ai, label: 'Briefs & questions', icon: MessageSquareText },
-      { to: routes.reports, label: 'Reports', icon: ChartColumn },
-      { to: routes.returns, label: 'All returns', icon: Rows3 },
-      { to: routes.sync, label: 'Uniware sync', icon: ArrowLeftRight },
+      { to: routes.ai, label: 'Briefs & questions' },
+      { to: routes.reports, label: 'Reports' },
+      { to: routes.returns, label: 'All returns' },
+      { to: routes.sync, label: 'Uniware sync' },
     ],
   },
 ];
 
 function Brand() {
   return (
-    <div className="flex items-center gap-2.5 px-2">
-      <div className="grid size-7 place-items-center rounded-md bg-foreground font-mono text-[13px] font-semibold text-background">
-        H
-      </div>
+    <div className="flex flex-col gap-1.5">
+      <HexalogLogo className="h-[22px] w-auto self-start text-white" />
 
-      <div className="leading-tight">
-        <div className="text-[13px] font-semibold">Hexalog</div>
-
-        <div className="text-[11px] text-muted-foreground">Returns desk</div>
-      </div>
+      <span className="text-[12px] text-sidebar-foreground/70">Returns desk</span>
     </div>
   );
 }
@@ -85,27 +69,18 @@ function NavCount({ item }: { item: NavItem }) {
     return null;
   }
 
-  return <span className="ml-auto font-mono text-[11px] text-muted-foreground tabular-nums">{formatCount(value)}</span>;
+  return <span className={cn('ml-1.5 tabular-nums', item.urgent ? 'font-semibold text-signal' : 'text-sidebar-foreground/70')}>{formatCount(value)}</span>;
 }
 
 function NavEntry({ item }: { item: NavItem }) {
-  const Icon = item.icon;
-
   return (
     <NavLink
       to={item.to}
       end={item.to === routes.overview}
       className={({ isActive }) =>
-        cn(
-          'flex h-8 items-center gap-2.5 rounded-md px-2 text-[13px] transition-colors',
-          isActive
-            ? 'bg-background font-medium text-foreground shadow-xs ring-1 ring-border'
-            : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'
-        )
+        cn('block py-[5px] text-[14px] transition-colors', isActive ? 'font-semibold text-white' : 'text-sidebar-foreground hover:text-white')
       }
     >
-      <Icon className="size-4" />
-
       {item.label}
 
       <NavCount item={item} />
@@ -115,8 +90,8 @@ function NavEntry({ item }: { item: NavItem }) {
 
 function NavSection({ group }: { group: NavGroup }) {
   return (
-    <div className="flex flex-col gap-0.5">
-      <div className="px-2 pb-1 text-[11px] font-medium tracking-wider text-muted-foreground uppercase">{group.label}</div>
+    <div className="flex flex-col">
+      <div className="pb-1.5 text-[12px] text-sidebar-foreground/60">{group.label}</div>
 
       {group.items.map(item => (
         <NavEntry key={item.to} item={item} />
@@ -131,30 +106,26 @@ const SOURCE_LABEL: Record<UniwareMode, string> = {
   [UniwareMode.IMPORT]: 'Uniware export',
 };
 
-function SourceBadge() {
+function Source() {
   const { data } = useSyncStatus();
 
   if (!data) {
     return null;
   }
 
-  const live = data.mode === UniwareMode.LIVE;
+  const facilities = (data.accounts ?? []).map(a => a.facility).join(' · ');
 
   return (
-    <div className="rounded-md border bg-background px-2.5 py-2">
-      <div className="flex items-center gap-1.5 text-[11px] font-medium">
-        <span className={cn('size-1.5 rounded-full', live ? 'bg-ok' : 'bg-warn')} />
-        {SOURCE_LABEL[data.mode]}
-      </div>
-
-      <div className="mt-0.5 font-mono text-[11px] text-muted-foreground">{(data.accounts ?? []).map(a => a.facility).join(' · ')}</div>
-    </div>
+    <p className={cn('text-[12px]', data.mode === UniwareMode.LIVE ? 'text-sidebar-foreground/70' : 'text-signal')}>
+      {SOURCE_LABEL[data.mode]}
+      {facilities && <span className="block font-mono text-[11px] opacity-80">{facilities}</span>}
+    </p>
   );
 }
 
 export function Sidebar() {
   return (
-    <aside className="hidden w-56 shrink-0 flex-col gap-6 border-r bg-muted/40 px-3 py-4 md:flex">
+    <aside className="hidden w-52 shrink-0 flex-col gap-7 bg-sidebar px-4 py-5 md:flex">
       <Brand />
 
       <nav className="flex flex-col gap-5">
@@ -164,7 +135,7 @@ export function Sidebar() {
       </nav>
 
       <div className="mt-auto">
-        <SourceBadge />
+        <Source />
       </div>
     </aside>
   );

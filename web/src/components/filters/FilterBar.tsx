@@ -2,45 +2,22 @@
 // period, type), how to count time on the right. Downloads and status stay
 // in the header.
 
-import { Building2, CalendarDays, Clock } from 'lucide-react';
 import type { ReactNode } from 'react';
-
-import { CLOCK_MODE_LABEL, ClockMode } from '@hexabuild/shared';
 
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useClients } from '@/hooks/queries';
-import { useClock } from '@/hooks/useClock';
 import { RANGE_PRESET_LABEL, RangePreset, type Scope } from '@/hooks/useScope';
 
 const ALL_CLIENTS = 'all';
 
-const CLOCK_MODES = [ClockMode.WORKING, ClockMode.ALL];
+// A select that reads as text in the filter row, not as a boxed control.
+const QUIET_TRIGGER = 'h-7 gap-1 border-0 bg-transparent px-0 text-[13px] text-muted-foreground shadow-none hover:text-foreground data-[state=open]:text-foreground dark:bg-transparent';
 
-const pad = (n: number) => String(n).padStart(2, '0');
-
-const timeOf = (minutes: number) => `${pad(Math.floor(minutes / 60))}:${pad(minutes % 60)}`;
-
-/** A small caption + control, so each filter says what it is. */
-/** An icon (with its name and meaning on hover) and its control; no text label, to keep the row on one line. */
-function Field({ icon, label, hint, children }: { icon: ReactNode; label: string; hint?: string; children: ReactNode }) {
+/** A control with its name and meaning on hover. The control's own value says what it is ("All clients"). */
+function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
-    <div className="flex items-center gap-1.5">
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span aria-label={label} className="flex cursor-help text-muted-foreground">
-            {icon}
-          </span>
-        </TooltipTrigger>
-
-        <TooltipContent className="max-w-xs text-xs leading-relaxed">
-          <span className="font-medium">{label}</span>
-          {hint ? `: ${hint}` : ''}
-        </TooltipContent>
-      </Tooltip>
-
+    <div className="flex items-center gap-1.5" title={hint ? `${label}: ${hint}` : label}>
       {children}
     </div>
   );
@@ -52,9 +29,9 @@ export function ClientFilter({ scope }: { scope: Scope }) {
   const clients = data?.clients ?? [];
 
   return (
-    <Field icon={<Building2 className="size-4" />} label="Client" hint="the brand (Uniware account) the returns belong to">
+    <Field label="Client" hint="the brand (Uniware account) the returns belong to">
       <Select value={scope.scope.client ?? ALL_CLIENTS} onValueChange={value => scope.setClient(value === ALL_CLIENTS ? undefined : value)}>
-        <SelectTrigger size="sm" className="h-8 min-w-32 text-xs">
+        <SelectTrigger size="sm" className={QUIET_TRIGGER}>
           <SelectValue />
         </SelectTrigger>
 
@@ -108,9 +85,9 @@ function CustomDays({ scope }: { scope: Scope }) {
 
 export function DateRangeFilter({ scope, label, hint }: { scope: Scope; label: string; hint?: string }) {
   return (
-    <Field icon={<CalendarDays className="size-4" />} label={label} hint={hint}>
+    <Field label={label} hint={hint}>
       <Select value={scope.preset} onValueChange={value => scope.setPreset(value as RangePreset)}>
-        <SelectTrigger size="sm" className="h-8 min-w-28 text-xs">
+        <SelectTrigger size="sm" className={QUIET_TRIGGER}>
           <SelectValue />
         </SelectTrigger>
 
@@ -129,31 +106,13 @@ export function DateRangeFilter({ scope, label, hint }: { scope: Scope; label: s
 }
 
 /** Working hours vs all hours, for every waiting time and late flag. */
-export function ClockFilter() {
-  const { mode, setMode, schedule } = useClock();
-
-  return (
-    <Field
-      icon={<Clock className="size-4" />}
-      label="Count time in"
-      hint={`Working hours counts only ${timeOf(schedule.startMinutes)}–${timeOf(schedule.endMinutes)} on working days, so a parcel arriving after closing starts waiting the next morning. "wd" = one working day.`}
-    >
-      <ToggleGroup type="single" size="sm" variant="outline" value={mode} onValueChange={value => value && setMode(value as ClockMode)}>
-        {CLOCK_MODES.map(clock => (
-          <ToggleGroupItem key={clock} value={clock} className="h-8 px-2.5 text-xs">
-            {CLOCK_MODE_LABEL[clock]}
-          </ToggleGroupItem>
-        ))}
-      </ToggleGroup>
-    </Field>
-  );
-}
+export { ClockToggle as ClockFilter } from '@/components/layout/ClockToggle';
 
 /** Filters on the left, view settings on the right. */
 export function FilterBar({ filters, settings }: { filters: ReactNode; settings?: ReactNode }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b bg-muted/30 px-6 py-2">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">{filters}</div>
+    <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 px-8 pt-2 pb-4">
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">{filters}</div>
 
       <div className="flex items-center gap-4">{settings}</div>
     </div>

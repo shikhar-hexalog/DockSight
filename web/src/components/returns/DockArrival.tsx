@@ -2,35 +2,32 @@
 // partner, its condition, the photo, and the signed handover sheet. The part
 // CX needs when a customer or courier disputes a return.
 
-import { Camera, FileCheck2 } from 'lucide-react';
-
 import { type DockArrival as Arrival, PARCEL_CONDITION_LABEL } from '@hexabuild/shared';
 
 import { formatDateTime } from '@/lib/format';
 
 function Condition({ arrival }: { arrival: Arrival }) {
   if (!arrival.condition) {
-    return <p className="text-sm">Condition: no issue noted at the dock</p>;
+    return <p className="text-[13.5px]">Condition: no issue noted at the dock</p>;
   }
 
   const note = arrival.conditionNote ? ` · "${arrival.conditionNote}"` : '';
 
   return (
-    <p className="text-sm font-medium text-overdue">
+    <p className="text-[13.5px] font-medium text-overdue">
       {PARCEL_CONDITION_LABEL[arrival.condition]}
       <span className="font-normal text-muted-foreground">{note}</span>
     </p>
   );
 }
 
-function FileLink({ url, label, icon }: { url: string | null; label: string; icon: React.ReactNode }) {
+function FileLink({ url, label }: { url: string | null; label: string }) {
   if (!url) {
     return null;
   }
 
   return (
-    <a href={url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs hover:bg-muted">
-      {icon}
+    <a href={url} target="_blank" rel="noreferrer" className="text-[13px] text-brand underline underline-offset-[3px] hover:text-ink">
       {label}
     </a>
   );
@@ -46,7 +43,7 @@ function SheetStatus({ arrival }: { arrival: Arrival }) {
 
 export function DockArrival({ arrival }: { arrival: Arrival | null }) {
   if (!arrival) {
-    return <p className="text-sm text-muted-foreground">Not received at our dock yet.</p>;
+    return <p className="pt-2.5 text-[13.5px] text-muted-foreground">Not received at our dock yet.</p>;
   }
 
   const from = arrival.courier ? ` from ${arrival.courier}` : '';
@@ -54,18 +51,18 @@ export function DockArrival({ arrival }: { arrival: Arrival | null }) {
   const vehicle = arrival.vehicleNo ? ` (${arrival.vehicleNo})` : '';
 
   return (
-    <div className="flex flex-col gap-2">
-      <p className="text-sm">
+    <div className="flex flex-col gap-2 pt-2.5">
+      <p className="text-[13.5px]">
         Received{from}
         {vehicle} by {arrival.scannedBy}, {formatDateTime(arrival.scannedAt)}
       </p>
 
       <Condition arrival={arrival} />
 
-      <div className="flex flex-wrap items-center gap-2">
-        <FileLink url={arrival.conditionPhotoUrl} label="Parcel photo" icon={<Camera className="size-3.5" />} />
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        <FileLink url={arrival.conditionPhotoUrl} label="Parcel photo" />
 
-        <FileLink url={arrival.signedSheetUrl} label="Signed handover sheet" icon={<FileCheck2 className="size-3.5" />} />
+        <FileLink url={arrival.signedSheetUrl} label="Signed handover sheet" />
 
         <SheetStatus arrival={arrival} />
       </div>

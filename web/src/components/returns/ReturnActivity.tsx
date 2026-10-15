@@ -30,12 +30,12 @@ function describe(event: ReturnEvent): string {
 
 export function ReturnActivity({ events }: { events: ReturnEvent[] }) {
   return (
-    <ol className="flex flex-col gap-2.5">
+    <ol>
       {events.map(event => (
-        <li key={event.id} className="flex items-baseline justify-between gap-4">
-          <span className="text-[13px]">{describe(event)}</span>
+        <li key={event.id} className="flex items-baseline justify-between gap-4 border-b py-2.5">
+          <span className="text-[13.5px]">{describe(event)}</span>
 
-          <span className="shrink-0 font-mono text-[11px] text-muted-foreground tabular-nums">{formatDateTime(event.occurredAt)}</span>
+          <span className="shrink-0 font-mono text-[12px] text-muted-foreground tabular-nums">{formatDateTime(event.occurredAt)}</span>
         </li>
       ))}
     </ol>

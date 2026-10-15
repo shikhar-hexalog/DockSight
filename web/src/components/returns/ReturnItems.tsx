@@ -11,13 +11,13 @@ const InventoryType = {
 
 function ItemThumb({ item }: { item: ReturnItem }) {
   if (item.catalogImageUrl) {
-    return <img src={item.catalogImageUrl} alt="" className="size-12 shrink-0 rounded-md border object-cover" loading="lazy" />;
+    return <img src={item.catalogImageUrl} alt="" className="h-[70px] w-14 shrink-0 rounded-sm object-cover" loading="lazy" />;
   }
 
   const initials = (item.skuCode ?? '??').slice(0, 3);
 
   return (
-    <div className="grid size-12 shrink-0 place-items-center rounded-md border bg-muted font-mono text-[10px] text-muted-foreground">
+    <div className="grid h-[70px] w-14 shrink-0 place-items-center rounded-sm bg-muted font-mono text-[10px] text-muted-foreground">
       {initials}
     </div>
   );
@@ -45,21 +45,21 @@ function QcComment({ comment }: { comment: string | null }) {
 
 function ItemRow({ item, last }: { item: ReturnItem; last: boolean }) {
   return (
-    <li className={cn('flex gap-3 py-3', !last && 'border-b')}>
+    <li className={cn('flex gap-4 py-3', !last && 'border-b')}>
       <ItemThumb item={item} />
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[13px] font-medium">{item.itemName ?? 'Unnamed item'}</p>
+        <p className="truncate text-[13.5px] font-medium">{item.itemName ?? 'Unnamed item'}</p>
 
         <div className="mt-0.5 flex items-center gap-2 text-muted-foreground">
-          <Mono className="text-[11px]">{item.skuCode ?? '—'}</Mono>
+          <Mono className="text-[12px]">{item.skuCode ?? '—'}</Mono>
 
           <span className="text-border">·</span>
 
           <InventoryLabel type={item.inventoryType} />
         </div>
 
-        <p className="mt-1 text-xs">{item.returnReason ?? 'No reason given'}</p>
+        <p className="mt-1 text-[12.5px]">{item.returnReason ?? 'No reason given'}</p>
 
         <QcComment comment={item.putawayQcComment} />
       </div>

@@ -23,20 +23,10 @@ function SyncLabel({ status }: { status: SyncStatusResponse }) {
   }
 
   if (latest?.status === SyncStatus.FAILED) {
-    return (
-      <span className="flex items-center gap-1.5 text-overdue">
-        <span className="size-1.5 rounded-full bg-overdue" />
-        Last sync failed
-      </span>
-    );
+    return <span className="text-overdue">Last sync failed</span>;
   }
 
-  return (
-    <span className="flex items-center gap-1.5">
-      <span className="size-1.5 rounded-full bg-ok" />
-      Synced {formatRelative(status.lastSuccessAt)}
-    </span>
-  );
+  return <span>Synced {formatRelative(status.lastSuccessAt)}</span>;
 }
 
 export function SyncIndicator() {
@@ -49,10 +39,10 @@ export function SyncIndicator() {
   }
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-1.5">
       <Link
         to={routes.sync}
-        className="rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        className="text-[13px] text-muted-foreground transition-colors hover:text-foreground"
       >
         <SyncLabel status={data} />
       </Link>

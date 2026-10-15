@@ -1,28 +1,27 @@
-import { Search, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useRef } from 'react';
 
 import { Input } from '@/components/ui/input';
-import { Kbd } from '@/components/ui/kbd';
 import { useSlashFocus } from '@/hooks/useSlashFocus';
 import { cn } from '@/lib/utils';
 
 export const SEARCH_PLACEHOLDER = 'Search AWB, order, SKU…';
 
-function ClearOrHint({ value, onClear }: { value: string; onClear: () => void }) {
-  if (value) {
-    return (
-      <button
-        type="button"
-        onClick={onClear}
-        aria-label="Clear search"
-        className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-      >
-        <X className="size-3.5" />
-      </button>
-    );
+function Clear({ value, onClear }: { value: string; onClear: () => void }) {
+  if (!value) {
+    return null;
   }
 
-  return <Kbd className="absolute top-1/2 right-2 -translate-y-1/2">/</Kbd>;
+  return (
+    <button
+      type="button"
+      onClick={onClear}
+      aria-label="Clear search"
+      className="absolute top-1/2 right-0 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+    >
+      <X className="size-3.5" />
+    </button>
+  );
 }
 
 /** Search any code someone might have. Press / anywhere to jump here. */
@@ -33,17 +32,15 @@ export function SearchBox({ value, onChange, className }: { value: string; onCha
 
   return (
     <div className={cn('relative w-full max-w-sm', className)}>
-      <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
-
       <Input
         ref={inputRef}
         value={value}
         onChange={event => onChange(event.target.value)}
         placeholder={SEARCH_PLACEHOLDER}
-        className="h-8 pr-8 pl-8 text-[13px]"
+        className="h-8 rounded-none border-0 border-b border-input bg-transparent px-0 pr-6 text-[13px] shadow-none focus-visible:border-ink focus-visible:ring-0 dark:bg-transparent"
       />
 
-      <ClearOrHint value={value} onClear={() => onChange('')} />
+      <Clear value={value} onClear={() => onChange('')} />
     </div>
   );
 }

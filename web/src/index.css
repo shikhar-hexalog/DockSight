@@ -3,11 +3,17 @@
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
 @import "@fontsource-variable/geist-mono";
+@import "@fontsource/hauora-sans/600.css";
+@import "@fontsource/hauora-sans/700.css";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-    --font-heading: var(--font-sans);
+    --font-heading: 'Hauora Sans', var(--font-sans);
+    --font-display: 'Hauora Sans', 'Geist Variable', sans-serif;
+    --color-ink: var(--ink);
+    --color-signal: var(--signal);
+    --color-brand: var(--brand);
     --font-sans: 'Geist Variable', sans-serif;
     --font-mono: 'Geist Mono Variable', ui-monospace, monospace;
     --color-stage-expected: var(--stage-expected);
@@ -61,49 +67,54 @@
 }
 
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --radius: 0.5rem;
-    --stage-expected: oklch(0.62 0.12 250);
-    --stage-pending: oklch(0.72 0.15 70);
-    --stage-manifested: oklch(0.6 0.12 270);
-    --stage-processed: oklch(0.6 0.13 155);
-    --stage-cancelled: oklch(0.6 0 0);
-    --warn: oklch(0.72 0.15 70);
+    /* Hexalog brand, from hexalog.in: indigo ink, purple accent, yellow highlighter. */
+    --ink: #26124d;
+    --brand: #4b2492;
+    --signal: #ffd233;
+    --background: #ffffff;
+    --foreground: #1e1830;
+    --card: #ffffff;
+    --card-foreground: #1e1830;
+    --popover: #ffffff;
+    --popover-foreground: #1e1830;
+    --primary: var(--ink);
+    --primary-foreground: #ffffff;
+    --secondary: #f4f2f8;
+    --secondary-foreground: var(--ink);
+    --muted: #f6f5f9;
+    --muted-foreground: #7a7392;
+    --accent: #f4f2f8;
+    --accent-foreground: var(--ink);
+    --destructive: #c0262f;
+    --border: #ece9f2;
+    --input: #dcd7e6;
+    --ring: #a493cf;
+    --chart-1: var(--ink);
+    --chart-2: #7a7392;
+    --chart-3: #b3aac8;
+    --chart-4: #d6d0e2;
+    --chart-5: #ece9f2;
+    --radius: 0.375rem;
+    /* Stages are told apart by position and words, so their colours stay quiet. */
+    --stage-expected: #b3aac8;
+    --stage-pending: #c98a00;
+    --stage-manifested: var(--brand);
+    --stage-processed: #2f7d5f;
+    --stage-cancelled: #b3aac8;
+    --warn: #c98a00;
     /* Chart series: validated categorical slots 1-2 (blue, orange) for CVD separation. */
     --series-1: #2a78d6;
     --series-2: #eb6834;
-    --overdue: oklch(0.58 0.2 27);
-    --ok: oklch(0.6 0.13 155);
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+    --overdue: #c0262f;
+    --ok: #2f7d5f;
+    --sidebar: var(--ink);
+    --sidebar-foreground: #b3a8d4;
+    --sidebar-primary: #ffffff;
+    --sidebar-primary-foreground: var(--ink);
+    --sidebar-accent: rgb(255 255 255 / 0.06);
+    --sidebar-accent-foreground: #ffffff;
+    --sidebar-border: rgb(255 255 255 / 0.08);
+    --sidebar-ring: #a493cf;
 }
 
 .dark {
@@ -246,4 +257,13 @@
     font-size: 13px;
     font-weight: 700;
   }
+}
+
+/* hexalog.in's yellow highlighter: marks the one phrase that needs someone now. */
+.highlight {
+  background: linear-gradient(transparent 12%, var(--signal) 12%, var(--signal) 88%, transparent 88%);
+  color: var(--ink);
+  font-weight: 600;
+  padding: 0 3px;
+  box-decoration-break: clone;
 }
