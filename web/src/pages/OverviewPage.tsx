@@ -1,16 +1,7 @@
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router';
 
-import {
-  BRIEF_KIND_LABEL,
-  ClockMode,
-  type OverviewResponse,
-  RETURN_TYPE_LABEL,
-  ReturnType,
-  type TypeCounts,
-  BATCH_UNSIGNED_WARN_HOURS,
-  MovementKind,
-} from '@hexabuild/shared';
+import { BATCH_UNSIGNED_WARN_HOURS, BRIEF_KIND_LABEL, MovementKind, type OverviewResponse, STAGE_LABEL, Stage } from '@hexabuild/shared';
 
 import { QueryError } from '@/components/common/QueryError';
 import { InfoTip } from '@/components/common/InfoTip';
@@ -27,12 +18,6 @@ import { routes } from '@/routes';
 
 const dayFormat = new Intl.DateTimeFormat('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
 
-function splitLabel(counts: TypeCounts): string {
-  return `${formatCount(counts[ReturnType.RTO])} ${RETURN_TYPE_LABEL[ReturnType.RTO]} · ${formatCount(counts[ReturnType.CIR])} ${RETURN_TYPE_LABEL[ReturnType.CIR]}`;
-}
-
-type HoursLabel = (hours: number | null) => string;
-
 interface Tile {
   label: string;
   value: string;
@@ -43,58 +28,43 @@ interface Tile {
   info: string;
 }
 
-function tilesFor(o: OverviewResponse, hoursLabel: HoursLabel): Tile[] {
-  const tatHint = o.clock === ClockMode.WORKING ? 'Received → processed, working hours' : 'Received → processed in Uniware';
-
+/** The return's journey, in the same words as the Board. */
+function tilesFor(o: OverviewResponse): Tile[] {
   return [
-    { label: 'Expected', info: EXPLAIN.expected, value: formatCount(o.expected.total), hint: `${splitLabel(o.expected)} on the way` },
     {
-      label: 'Received today',
+      label: STAGE_LABEL[Stage.EXPECTED],
+      info: EXPLAIN.expected,
+      value: formatCount(o.expected.total),
+      hint: 'On the way, not at our dock yet',
+      to: routes.board,
+    },
+    {
+      label: 'Arrived at dock today',
       info: EXPLAIN.receivedToday,
       value: formatCount(o.receivedToday.total),
-      hint: splitLabel(o.receivedToday),
-      // The returns behind the number, from every desk and sheet (not just this desk's handover).
+      hint: 'Scanned at the desk or from the sheet',
       to: movementLink(MovementKind.ARRIVED),
     },
     {
-      label: 'Processed in Uniware today',
-      info: EXPLAIN.processedToday,
-      value: formatCount(o.processedToday.total),
-      hint: splitLabel(o.processedToday),
-      to: movementLink(MovementKind.PROCESSED),
-    },
-    {
-      label: 'Pending in Uniware',
+      label: STAGE_LABEL[Stage.RECEIVED],
       info: EXPLAIN.pending,
       value: formatCount(o.pending.total),
-      hint: `${formatCount(o.carriedOver)} carried over from before today`,
+      hint: `${formatCount(o.carriedOver)} waiting since before today`,
       to: routes.pending,
       alert: o.carriedOver > 0,
     },
     {
-      label: 'Set aside (exceptions)',
-      info: EXPLAIN.setAside,
-      value: formatCount(o.exceptionsOpen),
-      hint: 'Unexpected or cancelled parcels',
-      to: routes.exceptions,
-      alert: o.exceptionsOpen > 0,
-    },
-    { label: 'Median TAT today', info: EXPLAIN.medianTat, value: hoursLabel(o.tatTodayMedianHours), hint: tatHint, to: routes.reports },
-    {
-      label: 'Pull from dispatch',
-      info: EXPLAIN.pullFromDispatch,
-      value: formatCount(o.dispatch.open),
-      hint: `${formatCount(o.dispatch.pulledToday)} RTOs avoided today`,
-      to: routes.dispatch,
-      alert: o.dispatch.open > 0,
+      label: STAGE_LABEL[Stage.MANIFESTED],
+      info: EXPLAIN.manifested,
+      value: formatCount(o.manifested.total),
+      hint: 'In Uniware, putaway not closed yet',
+      to: routes.board,
     },
     {
-      label: 'Handovers to sign',
-      info: EXPLAIN.handoversToSign,
-      value: formatCount(o.batches.open),
-      hint: `${formatCount(o.batches.unsignedOverdue)} open over ${BATCH_UNSIGNED_WARN_HOURS}h without a signed sheet`,
-      to: routes.receive,
-      alert: o.batches.unsignedOverdue > 0,
+      label: 'Closed today',
+      info: EXPLAIN.closedToday,
+      value: formatCount(o.closedToday.total),
+      hint: `${formatCount(o.closedTodayWithoutDock)} of them had no dock scan`,
     },
   ];
 }
@@ -130,11 +100,9 @@ function TileLink({ tile }: { tile: Tile }) {
 }
 
 function Tiles({ overview }: { overview: OverviewResponse }) {
-  const hoursLabel = useHoursFormatter();
-
   return (
-    <div className="grid grid-cols-2 border-b md:grid-cols-4 xl:grid-cols-8 [&>*]:border-r [&>*]:border-b xl:[&>*]:border-b-0">
-      {tilesFor(overview, hoursLabel).map(tile => (
+    <div className="grid grid-cols-2 border-b md:grid-cols-5 [&>*]:border-r [&>*]:border-b md:[&>*]:border-b-0">
+      {tilesFor(overview).map(tile => (
         <TileLink key={tile.label} tile={tile} />
       ))}
     </div>
@@ -182,7 +150,7 @@ function PendingAges({ overview }: { overview: OverviewResponse }) {
 
   return (
     <Panel
-      title="How long pending returns have waited"
+      title="Pending in Uniware: how long"
       info={EXPLAIN.pendingAges}
       action={
         <Link to={routes.pending} className="text-xs text-muted-foreground underline-offset-2 hover:underline">
@@ -206,14 +174,14 @@ function PendingByCourier({ overview }: { overview: OverviewResponse }) {
 
   if (overview.pendingByCourier.length === 0) {
     return (
-      <Panel title="Pending by courier" info={EXPLAIN.pendingByCourier}>
+      <Panel title="Pending in Uniware: by courier" info={EXPLAIN.pendingByCourier}>
         <p className="text-sm text-muted-foreground">Nothing pending.</p>
       </Panel>
     );
   }
 
   return (
-    <Panel title="Pending by courier" info={EXPLAIN.pendingByCourier}>
+    <Panel title="Pending in Uniware: by courier" info={EXPLAIN.pendingByCourier}>
       <div className="flex flex-col gap-3">
         {overview.pendingByCourier.map(courier => (
           <Bar
@@ -254,6 +222,45 @@ function LatestBrief() {
   );
 }
 
+interface Attention {
+  count: number;
+  text: string;
+  to: string;
+}
+
+/** Only what needs someone right now; hidden when everything is zero. */
+function NeedsAttention({ overview: o }: { overview: OverviewResponse }) {
+  const items: Attention[] = [
+    { count: o.dispatch.open, text: 'cancelled orders to pull before pickup', to: routes.dispatch },
+    {
+      count: o.batches.receiveOverdue,
+      text: `receiving handover open over ${BATCH_UNSIGNED_WARN_HOURS}h without a signed sheet`,
+      to: routes.receive,
+    },
+    {
+      count: o.batches.dispatchOverdue,
+      text: `courier pickup open over ${BATCH_UNSIGNED_WARN_HOURS}h without a signed sheet`,
+      to: routes.dispatch,
+    },
+  ].filter(item => item.count > 0);
+
+  if (items.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 border-b bg-overdue/5 px-6 py-2.5">
+      <span className="text-xs font-medium text-overdue">Needs attention</span>
+
+      {items.map(item => (
+        <Link key={item.text} to={item.to} className="rounded-full border border-overdue/30 bg-background px-3 py-1 text-xs hover:bg-overdue/10">
+          <span className="font-semibold text-overdue tabular-nums">{formatCount(item.count)}</span> {item.text}
+        </Link>
+      ))}
+    </div>
+  );
+}
+
 function OverviewBody() {
   const { data, error, isPending, refetch } = useOverview();
 
@@ -274,6 +281,8 @@ function OverviewBody() {
       <LatestBrief />
 
       <Tiles overview={data} />
+
+      <NeedsAttention overview={data} />
 
       <div className="grid gap-4 p-6 lg:grid-cols-2">
         <PendingAges overview={data} />

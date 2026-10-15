@@ -74,9 +74,9 @@ export function getDeskManifest(): DeskManifest {
   const rows = db
     .prepare(
       `SELECT ${DESK_COLUMNS} FROM returns r
-       WHERE r.stage != :processed OR r.processed_at >= :processedSince`
+       WHERE r.stage != :closed OR r.processed_at >= :processedSince`
     )
-    .all({ processed: Stage.PROCESSED, processedSince });
+    .all({ closed: Stage.CLOSED, processedSince });
 
   return { generatedAt: nowIso(), returns: rows.map(toDeskReturn) };
 }
@@ -309,7 +309,7 @@ function sheetOutcome(match: DeskReturn | null, normalized: string): SheetOutcom
     return SheetOutcome.ALREADY_RECEIVED;
   }
 
-  if (match.stage === Stage.PROCESSED) {
+  if (match.stage === Stage.MANIFESTED || match.stage === Stage.CLOSED) {
     return SheetOutcome.PROCESSED_TIME_RECORDED;
   }
 

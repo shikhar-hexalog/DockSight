@@ -76,6 +76,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export interface ReturnsFilters extends ScopeFilters {
   movement?: MovementKind;
   putawayPending?: boolean;
+  processed?: boolean;
   stage?: Stage;
   type?: ReturnType;
   q?: string;
@@ -246,6 +247,6 @@ export const exportUrls = {
   scans: (since?: string, until?: string) => `/api/export/scans.csv${toQuery({ since, until })}`,
   handover: (range: ExportRange) => `/api/export/handover.csv${toQuery({ ...range })}`,
   holds: (range: ExportRange) => `/api/export/holds.csv${toQuery({ ...range })}`,
-  returns: (filters: ScopeFilters & { movement?: MovementKind; stage?: Stage; putawayPending?: boolean }) =>
+  returns: (filters: ScopeFilters & { movement?: MovementKind; stage?: Stage; putawayPending?: boolean; processed?: boolean }) =>
     `/api/export/returns.csv${toQuery({ ...filters })}`,
 };

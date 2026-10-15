@@ -10,6 +10,7 @@ import type { SyncService } from '../sync/syncService.ts';
 const listQuery = scopeQuery.extend({
   movement: z.enum(MOVEMENT_KINDS).optional(),
   putawayPending: z.stringbool().optional(),
+  processed: z.stringbool().optional(),
   stage: z.enum(ALL_STAGES).optional(),
   type: z.enum(RETURN_TYPES).optional(),
   sort: z.enum([ReturnSort.STAGE_AGE, ReturnSort.RECENT]).default(ReturnSort.STAGE_AGE),

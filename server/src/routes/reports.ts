@@ -37,6 +37,7 @@ const tatQuery = scopeQuery.extend({ clock: clockParam });
 const returnsExportQuery = scopeQuery.extend({
   movement: z.enum(MOVEMENT_KINDS).optional(),
   putawayPending: z.stringbool().optional(),
+  processed: z.stringbool().optional(),
   stage: z.enum(ALL_STAGES).optional(),
   type: z.enum(RETURN_TYPES).optional(),
 });

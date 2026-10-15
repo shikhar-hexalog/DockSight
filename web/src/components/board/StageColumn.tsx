@@ -13,7 +13,7 @@ import { ReturnCard } from './ReturnCard';
 
 // Done columns show only the latest; the board is for work in progress.
 const COLUMN_LIMIT: Partial<Record<Stage, number>> = {
-  [Stage.PROCESSED]: 30,
+  [Stage.CLOSED]: 30,
   [Stage.CANCELLED]: 30,
 };
 
@@ -21,7 +21,7 @@ const DEFAULT_LIMIT = 300;
 
 // Work in progress shows the longest-waiting first; done columns the latest.
 const COLUMN_SORT: Partial<Record<Stage, ReturnSort>> = {
-  [Stage.PROCESSED]: ReturnSort.RECENT,
+  [Stage.CLOSED]: ReturnSort.RECENT,
   [Stage.CANCELLED]: ReturnSort.RECENT,
 };
 

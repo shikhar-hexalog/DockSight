@@ -12,6 +12,7 @@
     --font-mono: 'Geist Mono Variable', ui-monospace, monospace;
     --color-stage-expected: var(--stage-expected);
     --color-stage-pending: var(--stage-pending);
+    --color-stage-manifested: var(--stage-manifested);
     --color-stage-processed: var(--stage-processed);
     --color-stage-cancelled: var(--stage-cancelled);
     --color-warn: var(--warn);
@@ -86,6 +87,7 @@
     --radius: 0.5rem;
     --stage-expected: oklch(0.62 0.12 250);
     --stage-pending: oklch(0.72 0.15 70);
+    --stage-manifested: oklch(0.6 0.12 270);
     --stage-processed: oklch(0.6 0.13 155);
     --stage-cancelled: oklch(0.6 0 0);
     --warn: oklch(0.72 0.15 70);

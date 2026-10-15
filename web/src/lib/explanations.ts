@@ -10,16 +10,19 @@ export const EXPLAIN = {
   receivedToday:
     'Returns that arrived at our dock today: scanned at the receiving desk, or listed in an imported receiving sheet. Each return counts once, at its first scan.',
   processedToday:
-    'Returns Uniware marked as processed today (inventory received or return completed). Includes returns that arrived at the dock on earlier days.',
+    "Returns Uniware marked as processed today, however they got there. 'Never scanned at our dock' = no desk scan or receiving-sheet row, so the app can't time them: usually parcels still received the old way (Google Sheet + manual Uniware entry).",
   pending:
     "At our dock but not yet processed in Uniware: the backlog to clear. 'Carried over' are the ones that arrived before today and are still waiting.",
   setAside:
     "Parcels scanned at the dock that need someone to check them: not in Uniware's expected list, or the return was already cancelled in Uniware. They leave this count once resolved on the Set aside page.",
-  medianTat: `For returns processed in Uniware today: the typical time from arriving at our dock to being processed. Half were faster than this. Only returns with a dock arrival record count. ${TIME_NOTE}`,
+  medianTat: `For returns processed in Uniware today that have a dock arrival record: the typical time from arriving at our dock to processed in Uniware. Half were faster. ${TIME_NOTE}`,
   pullFromDispatch:
     "Outbound parcels whose order was cancelled after they were put on a courier manifest. Pull them out before the courier takes them, or they'll come back as RTOs. 'RTOs avoided' = pulled out today.",
   handoversToSign:
     "Receiving or dispatch handovers that are still open: the signed handover sheet hasn't been uploaded yet. Ones open for more than 2 hours are flagged.",
+  manifested: 'In Uniware but not on the shelf yet: acknowledged (RETURN_ACKNOWLEDGED), or returned and waiting for putaway to close.',
+  closedToday:
+    "Putaway closed today: stock back in inventory. 'No dock scan' = never scanned at our desk or listed in the receiving sheet, usually parcels still received the old way.",
   shiftBrief: 'An AI-written summary for the shift change, made from the live numbers. Click to read the full note.',
 
   // Overview panels

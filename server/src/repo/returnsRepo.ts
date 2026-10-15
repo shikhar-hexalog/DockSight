@@ -297,7 +297,8 @@ export function upsertReturn(account: UniwareAccount, record: ReturnRecord): Ups
       sourceHash: record.sourceHash,
       stage,
       stageChanged: stageChanged ? 1 : 0,
-      stageChangedAt: reachedAt,
+      // Found on a later sync: Uniware's own date if it has one, else about now.
+      stageChangedAt: record.stageReachedAt ?? now,
       now,
     });
 
@@ -329,6 +330,8 @@ export interface ListFilters extends ScopeFilters {
   movement?: MovementKind;
   /** Only returns processed in Uniware whose putaway isn't closed yet. */
   putawayPending?: boolean;
+  /** true: processed in Uniware; false: not yet. */
+  processed?: boolean;
   stage?: Stage;
   type?: ReturnType;
   q?: string;
@@ -358,6 +361,10 @@ export function listReturns(filters: ListFilters): {
   if (filters.type) {
     where.push('r.type = :type');
     params.type = filters.type;
+  }
+
+  if (filters.processed !== undefined) {
+    where.push(filters.processed ? 'r.processed_at IS NOT NULL' : 'r.processed_at IS NULL');
   }
 
   if (filters.putawayPending) {
