@@ -1,5 +1,12 @@
-// "Your order has been dispatched" emails, sent once when a dispatch handover
-// is submitted: one per parcel that cleared the handover check.
+// "Your order has been dispatched" emails for a submitted dispatch handover:
+// one per parcel that cleared the handover check, each sent once.
+//
+// - Sent when the handover is submitted, and again for any cleared scan that
+//   reaches the server after that (the desk syncs scans and the submit
+//   separately, so after being offline the submit can arrive first).
+// - Parcels already emailed are skipped, and a handover being sent right now
+//   is not started twice, so a repeated submit never emails anyone twice.
+// - Anything that failed (mail server down) is retried every few minutes.
 //
 // Demo: Uniware masks customer emails, so every email goes to MAIL_DEMO_TO
 // instead, through Mailpit unless SMTP_* says otherwise.
@@ -13,6 +20,14 @@ import { nowIso } from '../lib/time.ts';
 
 const SEND_TIMEOUT_MS = 15_000;
 
+const RETRY_EVERY_MS = 5 * 60_000;
+
+// Older handovers are left alone: their customers have long had the parcel.
+const RETRY_WITHIN_MS = 2 * 24 * 60 * 60_000;
+
+/** Handovers whose emails are being sent right now. */
+const sending = new Set<string>();
+
 const transport = nodemailer.createTransport({
   host: config.mail.host,
   port: config.mail.port,
@@ -24,6 +39,7 @@ const transport = nodemailer.createTransport({
 });
 
 interface Parcel {
+  id: string;
   code: string;
   checkedAt: string;
 }
@@ -80,55 +96,115 @@ function emailFor(parcel: Parcel, courier: string, vehicleNo: string | null, dis
   };
 }
 
-/** Sends the emails for a submitted dispatch handover, once. Receiving handovers are ignored. */
-export async function notifyDispatch(batchId: string): Promise<DispatchNotice | null> {
-  const done = db.prepare('SELECT * FROM dispatch_notices WHERE batch_id = ?').get(batchId);
+const CONNECTION_CODES = new Set(['ESOCKET', 'ECONNECTION', 'ETIMEDOUT', 'ECONNREFUSED', 'EDNS']);
 
-  if (done) {
-    return toNotice(done);
+function describeSendError({ message, code }: Error & { code?: string }): string {
+  if (code && CONNECTION_CODES.has(code)) {
+    return `can't reach the mail server at ${config.mail.host}:${config.mail.port} (is Mailpit running?)`;
   }
 
-  const batch = db.prepare('SELECT kind, courier, vehicle_no, submitted_at, status FROM receiving_batches WHERE id = ?').get(batchId);
+  return (message || code || 'the mail server did not accept it').slice(0, 200);
+}
+
+/** Emails the cleared parcels of a submitted dispatch handover that haven't had one yet. Receiving handovers are ignored. */
+export async function notifyDispatch(batchId: string): Promise<DispatchNotice | null> {
+  if (sending.has(batchId)) {
+    return null;
+  }
+
+  const batch = db.prepare('SELECT kind, courier, vehicle_no, submitted_at FROM receiving_batches WHERE id = ?').get(batchId);
 
   if (!batch || batch.kind !== BatchKind.DISPATCH || !batch.submitted_at) {
     return null;
   }
 
-  const parcels = db
-    .prepare('SELECT code, checked_at AS checkedAt FROM handover_checks WHERE batch_id = ? AND result = ? ORDER BY checked_at')
+  sending.add(batchId);
+
+  try {
+    return await sendPending(batchId, String(batch.courier), batch.vehicle_no === null ? null : String(batch.vehicle_no), String(batch.submitted_at));
+  } finally {
+    sending.delete(batchId);
+  }
+}
+
+async function sendPending(batchId: string, courier: string, vehicleNo: string | null, submittedAt: string): Promise<DispatchNotice | null> {
+  const pending = db
+    .prepare(
+      `SELECT hc.id, hc.code, hc.checked_at AS checkedAt FROM handover_checks hc
+       WHERE hc.batch_id = ? AND hc.result = ? AND NOT EXISTS (SELECT 1 FROM dispatch_emails de WHERE de.check_id = hc.id)
+       ORDER BY hc.checked_at`
+    )
     .all(batchId, HandoverResult.CLEAR) as unknown as Parcel[];
 
-  const courier = String(batch.courier);
-
-  const vehicleNo = batch.vehicle_no === null ? null : String(batch.vehicle_no);
+  // Nothing new: no row is written, so scans that arrive later still get theirs.
+  if (pending.length === 0) {
+    return null;
+  }
 
   const recipient = config.mail.demoTo ?? null;
 
-  let sent = 0;
+  const markSent = db.prepare('INSERT OR IGNORE INTO dispatch_emails (check_id, batch_id, sent_at) VALUES (?, ?, ?)');
+
+  let sentNow = 0;
 
   let error: string | null = recipient ? null : 'MAIL_DEMO_TO is not set in .env';
 
   if (recipient) {
-    for (const parcel of parcels) {
+    for (const parcel of pending) {
       try {
-        await transport.sendMail({ from: `Hexalog Warehouse <${config.mail.from}>`, to: recipient, ...emailFor(parcel, courier, vehicleNo, String(batch.submitted_at)) });
+        await transport.sendMail({ from: `Hexalog Warehouse <${config.mail.from}>`, to: recipient, ...emailFor(parcel, courier, vehicleNo, submittedAt) });
 
-        sent++;
+        // Recorded one by one, so a crash part-way never resends the ones that went.
+        markSent.run(parcel.id, batchId, nowIso());
+
+        sentNow++;
       } catch (err) {
-        error ??= (err as Error).message.slice(0, 200);
+        error ??= describeSendError(err as Error & { code?: string });
       }
     }
   }
 
-  const notice: DispatchNotice = { batchId, courier, recipient, sent, failed: parcels.length - sent, error, notifiedAt: nowIso() };
+  const sent = Number(db.prepare('SELECT COUNT(*) AS n FROM dispatch_emails WHERE batch_id = ?').get(batchId)?.n ?? 0);
+
+  const notice: DispatchNotice = { batchId, courier, recipient, sent, failed: pending.length - sentNow, error, notifiedAt: nowIso() };
 
   db.prepare(
-    `INSERT OR IGNORE INTO dispatch_notices (batch_id, courier, recipient, sent, failed, error, notified_at) VALUES (?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO dispatch_notices (batch_id, courier, recipient, sent, failed, error, notified_at) VALUES (?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT (batch_id) DO UPDATE SET recipient = excluded.recipient, sent = excluded.sent, failed = excluded.failed,
+       error = excluded.error, notified_at = excluded.notified_at`
   ).run(batchId, courier, recipient, sent, notice.failed, error, notice.notifiedAt);
 
-  console.log(`[mail] dispatch ${courier}: ${sent} sent, ${notice.failed} failed${error ? ` (${error})` : ''}`);
+  console.log(`[mail] dispatch ${courier}: ${sentNow} sent, ${notice.failed} failed${error ? ` (${error})` : ''}`);
 
   return notice;
+}
+
+/** Submitted dispatch handovers from the last two days with cleared parcels not yet emailed. */
+function handoversWithPending(): string[] {
+  const since = new Date(Date.now() - RETRY_WITHIN_MS).toISOString();
+
+  return db
+    .prepare(
+      `SELECT DISTINCT b.id FROM receiving_batches b
+       JOIN handover_checks hc ON hc.batch_id = b.id AND hc.result = ?
+       WHERE b.kind = ? AND b.submitted_at IS NOT NULL AND b.submitted_at >= ?
+         AND NOT EXISTS (SELECT 1 FROM dispatch_emails de WHERE de.check_id = hc.id)`
+    )
+    .all(HandoverResult.CLEAR, BatchKind.DISPATCH, since)
+    .map(row => String(row.id));
+}
+
+/** Retries emails that didn't go out (mail server down, scans that arrived late). Returns a stop function. */
+export function startDispatchEmailRetry(): () => void {
+  const timer = setInterval(() => {
+    void (async () => {
+      for (const batchId of handoversWithPending()) {
+        await notifyDispatch(batchId).catch(err => console.error('[mail] dispatch email retry failed:', err));
+      }
+    })();
+  }, RETRY_EVERY_MS);
+
+  return () => clearInterval(timer);
 }
 
 export function listDispatchNotices(since: string): DispatchNotice[] {

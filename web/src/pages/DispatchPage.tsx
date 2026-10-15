@@ -2,7 +2,7 @@ import { CircleCheck, CloudOff, OctagonX, RefreshCw, Repeat, ShieldAlert, Trash2
 import { useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
-import { BatchKind, DeskOpKind, type DispatchHold, HandoverResult, HoldStatus, PulledVia, RemoteTarget } from '@hexabuild/shared';
+import { BatchKind, DeskOpKind, type DispatchHold, type DispatchNotice, HandoverResult, HoldStatus, PulledVia, RemoteTarget } from '@hexabuild/shared';
 
 import { type ExportFile, ExportMenu } from '@/components/common/ExportMenu';
 import { Mono } from '@/components/common/Mono';
@@ -585,7 +585,10 @@ function usePhoneResults(handover: Handover, link: PhoneLink) {
 
 const NOTICE_TOAST_MS = 5_000;
 
-/** A toast when a submitted handover's customer emails go out. Notices already there when the page opened are not shown again. */
+/** A notice changes when more of its emails go out (late scans, a retry that worked). */
+const noticeKey = (notice: DispatchNotice) => `${notice.batchId}:${notice.sent}:${notice.failed}`;
+
+/** A toast when a submitted handover's customer emails go out. What was already there when the page opened is not shown again. */
 function useNotifiedToast() {
   const { data } = useDispatchNotices();
 
@@ -597,16 +600,16 @@ function useNotifiedToast() {
     }
 
     if (!seen.current) {
-      seen.current = new Set(data.data.map(notice => notice.batchId));
+      seen.current = new Set(data.data.map(noticeKey));
       return;
     }
 
     for (const notice of data.data) {
-      if (seen.current.has(notice.batchId)) {
+      if (seen.current.has(noticeKey(notice))) {
         continue;
       }
 
-      seen.current.add(notice.batchId);
+      seen.current.add(noticeKey(notice));
 
       if (notice.sent === 0) {
         toast.error('Clients not notified', {

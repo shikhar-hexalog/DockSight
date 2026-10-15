@@ -12,7 +12,7 @@ import {
 
 import { config } from '../config.ts';
 import { nowIso } from '../lib/time.ts';
-import { listDispatchNotices } from '../notify/dispatchEmails.ts';
+import { listDispatchNotices, notifyDispatch } from '../notify/dispatchEmails.ts';
 import { listHolds, pullHold, recordHandoverCheck } from '../repo/dispatchRepo.ts';
 import type { DispatchGuard } from '../sync/dispatchGuard.ts';
 
@@ -92,10 +92,28 @@ export function dispatchRouter(guard: DispatchGuard) {
   router.post('/dispatch/checks', (req, res) => {
     const { checks } = checksBody.parse(req.body);
 
+    const handovers = new Set<string>();
+
     const results = checks.map(raw => {
       const parsed = checkSchema.safeParse(raw);
 
-      return parsed.success ? recordHandoverCheck(parsed.data) : invalidCheck(raw);
+      if (!parsed.success) {
+        return invalidCheck(raw);
+      }
+
+      if (parsed.data.batchId) {
+        handovers.add(parsed.data.batchId);
+      }
+
+      return recordHandoverCheck(parsed.data);
+    });
+
+    // Scans can reach the server after their handover was submitted: email those customers too.
+    // notifyDispatch ignores handovers that aren't submitted yet.
+    setImmediate(() => {
+      for (const batchId of handovers) {
+        void notifyDispatch(batchId).catch(err => console.error('[mail] dispatch emails failed:', err));
+      }
     });
 
     const body: HandoverChecksResponse = { results };
