@@ -11,7 +11,6 @@ import {
   MovementKind,
   type MovementDay,
   type ScopeFilters,
-  Stage,
   TIME_LEGS,
   TIME_LEG_LABEL,
   type TatDay,
@@ -58,10 +57,10 @@ const InwardPart = {
 
 type InwardPart = (typeof InwardPart)[keyof typeof InwardPart];
 
-const PART: Record<InwardPart, { title: string; stage?: Stage; putawayPending?: boolean; info: string }> = {
+const PART: Record<InwardPart, { title: string; processed?: boolean; putawayPending?: boolean; info: string }> = {
   [InwardPart.CAME_IN]: { title: 'Came in', info: EXPLAIN.inwardCameIn },
-  [InwardPart.PROCESSED]: { title: 'Processed', stage: Stage.PROCESSED, info: EXPLAIN.inwardProcessed },
-  [InwardPart.PENDING]: { title: 'Not processed', stage: Stage.RECEIVED, info: EXPLAIN.inwardPending },
+  [InwardPart.PROCESSED]: { title: 'Processed', processed: true, info: EXPLAIN.inwardProcessed },
+  [InwardPart.PENDING]: { title: 'Not processed', processed: false, info: EXPLAIN.inwardPending },
   [InwardPart.PUTAWAY_PENDING]: { title: 'Putaway pending', putawayPending: true, info: EXPLAIN.putawayPending },
 };
 
@@ -272,7 +271,7 @@ const SEARCH_DEBOUNCE_MS = 250;
 function PickedResults({ pick, client, q }: { pick: Pick; client?: string; q: string | undefined }) {
   const part = PART[pick.part];
 
-  const filters = { movement: MovementKind.ARRIVED, stage: part.stage, putawayPending: part.putawayPending, from: pick.from, to: pick.to, client, q };
+  const filters = { movement: MovementKind.ARRIVED, processed: part.processed, putawayPending: part.putawayPending, from: pick.from, to: pick.to, client, q };
 
   const { data, error, isPending, refetch } = useReturns({ ...filters, limit: LIST_LIMIT });
 

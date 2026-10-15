@@ -27,7 +27,7 @@ export const EXCEPTION_RESULTS: ScanResult[] = [ScanResult.CANCELLED_RETURN, Sca
 export const SCAN_RESULT_LABEL: Record<ScanResult, string> = {
   [ScanResult.MATCHED]: 'Received',
   [ScanResult.ALREADY_RECEIVED]: 'Already scanned',
-  [ScanResult.ALREADY_PROCESSED]: 'Already processed in Uniware',
+  [ScanResult.ALREADY_PROCESSED]: 'Already in Uniware',
   [ScanResult.CANCELLED_RETURN]: 'Return was cancelled',
   [ScanResult.UNEXPECTED]: 'Not an expected return',
 };
@@ -109,7 +109,8 @@ export function classifyScan(match: Pick<DeskReturn, 'stage' | 'dockReceivedAt'>
     return ScanResult.UNEXPECTED;
   }
 
-  if (match.stage === Stage.PROCESSED) {
+  // Already in Uniware (manifested or putaway closed): nothing to receive.
+  if (match.stage === Stage.MANIFESTED || match.stage === Stage.CLOSED) {
     return ScanResult.ALREADY_PROCESSED;
   }
 

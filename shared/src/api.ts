@@ -173,6 +173,14 @@ export interface OverviewResponse {
   expected: TypeCounts;
   receivedToday: TypeCounts;
   processedToday: TypeCounts;
+  /** Of those, never scanned or listed at our dock: no arrival record, so no turnaround. */
+  processedTodayWithoutDock: number;
+  /** In Uniware (acknowledged / returned), putaway not closed yet. */
+  manifested: TypeCounts;
+  /** Putaway closed today: stock back in inventory. */
+  closedToday: TypeCounts;
+  /** Of those, never scanned or listed at our dock. */
+  closedTodayWithoutDock: number;
   pending: TypeCounts;
   /** Pending returns that arrived before today. */
   carriedOver: number;
@@ -183,7 +191,7 @@ export interface OverviewResponse {
   tatTodayMedianHours: number | null;
   dispatch: DispatchSummary;
   /** Receiving batches still waiting for their signed sheet. */
-  batches: { open: number; unsignedOverdue: number };
+  batches: { open: number; unsignedOverdue: number; receiveOverdue: number; dispatchOverdue: number };
 }
 
 /**

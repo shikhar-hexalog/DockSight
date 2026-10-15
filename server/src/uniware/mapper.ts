@@ -9,8 +9,6 @@ import { ReturnType, Stage } from '@hexabuild/shared';
 import { toIso } from '../lib/time.ts';
 import type { UniwareReturnDetail } from './types.ts';
 
-// Uniware's status for a customer return that expired before it arrived.
-const CANCELLED_STATUS = 'CANCELLED';
 
 export interface ItemRecord {
   saleOrderItemCode: string;
@@ -65,16 +63,28 @@ function processedAt(dates: { inventoryReceivedAt: string | null; completedAt: s
   return known.length === 0 ? null : known.sort()[0];
 }
 
-// Uniware only ever says Expected, Processed or Cancelled. "Received at our
-// dock" comes from our own records (desk scans, imported receiving sheets),
-// never from Uniware: the courier's delivered date is kept for reference only.
-function deriveStage(record: Pick<ReturnRecord, 'sourceStatus' | 'processedAt'>) {
-  if (record.processedAt) {
-    return { stage: Stage.PROCESSED, reachedAt: record.processedAt };
+// Statuses from Uniware's return/get. Putaway types (PUTAWAY_COURIER_RETURNED_ITEMS,
+// PUTAWAY_REVERSE_PICKUP_ITEM) aren't in this API; putaway closed shows as the
+// inventory received date (stock back in inventory).
+const ReturnStatus = {
+  ACKNOWLEDGED: 'RETURN_ACKNOWLEDGED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+// Uniware never says "at our dock": RECEIVED (Pending in Uniware) comes only
+// from our desk scans and receiving sheets.
+function deriveStage(record: Pick<ReturnRecord, 'sourceStatus' | 'processedAt' | 'inventoryReceivedAt'>) {
+  if (record.inventoryReceivedAt) {
+    return { stage: Stage.CLOSED, reachedAt: record.inventoryReceivedAt };
   }
 
-  if (record.sourceStatus === CANCELLED_STATUS) {
+  if (record.sourceStatus === ReturnStatus.CANCELLED) {
     return { stage: Stage.CANCELLED, reachedAt: null };
+  }
+
+  // Acknowledged in Uniware, or returned but not yet put away.
+  if (record.sourceStatus === ReturnStatus.ACKNOWLEDGED || record.processedAt) {
+    return { stage: Stage.MANIFESTED, reachedAt: record.processedAt };
   }
 
   return { stage: Stage.EXPECTED, reachedAt: null };
@@ -115,7 +125,7 @@ export function toReturnRecord(detail: UniwareReturnDetail, type: ReturnType, so
 
   const processed = processedAt(dates);
 
-  const derived = deriveStage({ sourceStatus, processedAt: processed });
+  const derived = deriveStage({ sourceStatus, processedAt: processed, inventoryReceivedAt: dates.inventoryReceivedAt });
 
   const items: ItemRecord[] = (detail.returnSaleOrderItems ?? []).map((item, index) => ({
     saleOrderItemCode: orNull(item.saleOrderItemCode) ?? `${sourceCode}#${index + 1}`,

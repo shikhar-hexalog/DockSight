@@ -63,7 +63,7 @@ export function toCourierReturnRecord(row: Record<string, string>): ReturnRecord
 
   const processedAt = putawayDone ? toIso(orNull(row[C.PUTAWAY_DATE])) ?? manifestAddedAt : null;
 
-  const stage = processedAt ? Stage.PROCESSED : Stage.EXPECTED;
+  const stage = processedAt ? Stage.CLOSED : Stage.EXPECTED;
 
   const stageReachedAt = processedAt;
 

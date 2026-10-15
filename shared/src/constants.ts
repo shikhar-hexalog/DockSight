@@ -27,24 +27,35 @@ export const RETURN_TYPE_LABEL: Record<ReturnType, string> = {
  *
  * A stage never moves backwards.
  */
+/**
+ * Where a return is, from Uniware's status and our own dock records:
+ *   EXPECTED   - Uniware: RETURN_EXPECTED, not at our dock yet
+ *   RECEIVED   - "Pending in Uniware": at our dock (scan / receiving sheet), not in Uniware yet
+ *   MANIFESTED - Uniware: RETURN_ACKNOWLEDGED, or returned but putaway not closed
+ *   CLOSED     - putaway closed: stock back in inventory (Uniware's inventory received date)
+ * CANCELLED is kept for Uniware data only; the warehouse doesn't cancel, so it isn't shown.
+ */
 export const Stage = {
   EXPECTED: 'EXPECTED',
   RECEIVED: 'RECEIVED',
-  PROCESSED: 'PROCESSED',
+  MANIFESTED: 'MANIFESTED',
+  CLOSED: 'CLOSED',
   CANCELLED: 'CANCELLED',
 } as const;
 
 export type Stage = (typeof Stage)[keyof typeof Stage];
 
 /** The main flow, in order. Cancelled sits outside it. */
-export const STAGE_ORDER: Stage[] = [Stage.EXPECTED, Stage.RECEIVED, Stage.PROCESSED];
+export const STAGE_ORDER: Stage[] = [Stage.EXPECTED, Stage.RECEIVED, Stage.MANIFESTED, Stage.CLOSED];
 
-export const ALL_STAGES: Stage[] = [...STAGE_ORDER, Stage.CANCELLED];
+/** The stages shown on the board, filters and counts. */
+export const ALL_STAGES: Stage[] = STAGE_ORDER;
 
 export const STAGE_LABEL: Record<Stage, string> = {
   [Stage.EXPECTED]: 'Expected',
   [Stage.RECEIVED]: 'Pending in Uniware',
-  [Stage.PROCESSED]: 'Processed',
+  [Stage.MANIFESTED]: 'Manifested',
+  [Stage.CLOSED]: 'Closed (putaway)',
   [Stage.CANCELLED]: 'Cancelled',
 };
 
@@ -52,7 +63,8 @@ export const STAGE_LABEL: Record<Stage, string> = {
 export const STAGE_SLA_HOURS: Record<Stage, number | null> = {
   [Stage.EXPECTED]: 14 * 24,
   [Stage.RECEIVED]: 24,
-  [Stage.PROCESSED]: null,
+  [Stage.MANIFESTED]: null,
+  [Stage.CLOSED]: null,
   [Stage.CANCELLED]: null,
 };
 
@@ -62,7 +74,8 @@ const STAGE_RANK: Record<Stage, number> = {
   [Stage.EXPECTED]: 0,
   [Stage.CANCELLED]: 1,
   [Stage.RECEIVED]: 2,
-  [Stage.PROCESSED]: 3,
+  [Stage.MANIFESTED]: 3,
+  [Stage.CLOSED]: 4,
 };
 
 export function stageRank(stage: Stage): number {

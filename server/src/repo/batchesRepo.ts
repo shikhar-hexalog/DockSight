@@ -153,11 +153,20 @@ export function submitBatch(op: BatchSubmitOp) {
   });
 }
 
-export function batchCounts(overdueBefore: string): { open: number; unsignedOverdue: number } {
+export function batchCounts(overdueBefore: string): { open: number; unsignedOverdue: number; receiveOverdue: number; dispatchOverdue: number } {
   const count = (sql: string, ...params: string[]) => Number(db.prepare(sql).get(...params)?.n ?? 0);
+
+  const overdue = (kind: BatchKind) =>
+    count('SELECT COUNT(*) AS n FROM receiving_batches WHERE status = ? AND started_at < ? AND kind = ?', BatchStatus.OPEN, overdueBefore, kind);
+
+  const receiveOverdue = overdue(BatchKind.RECEIVE);
+
+  const dispatchOverdue = overdue(BatchKind.DISPATCH);
 
   return {
     open: count('SELECT COUNT(*) AS n FROM receiving_batches WHERE status = ?', BatchStatus.OPEN),
-    unsignedOverdue: count('SELECT COUNT(*) AS n FROM receiving_batches WHERE status = ? AND started_at < ?', BatchStatus.OPEN, overdueBefore),
+    unsignedOverdue: receiveOverdue + dispatchOverdue,
+    receiveOverdue,
+    dispatchOverdue,
   };
 }
