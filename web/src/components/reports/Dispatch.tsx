@@ -1,5 +1,5 @@
 // Dispatch per day: courier pickups, parcels handed over, cancelled orders
-// caught and what happened to them, and rider-count mismatches.
+// caught and what happened to them.
 
 import { Download } from 'lucide-react';
 
@@ -25,12 +25,6 @@ const COLUMNS: Column[] = [
   { key: 'cancellationsCaught', label: 'Cancellations caught', info: 'Orders found cancelled after their parcel was put on a manifest.' },
   { key: 'pulled', label: 'Pulled out', info: 'Cancelled parcels taken out before the courier left: RTOs avoided.' },
   { key: 'missed', label: 'Slipped through', info: "Cancelled parcels handed over anyway: they'll come back as RTOs.", alert: true },
-  {
-    key: 'riderMismatches',
-    label: 'Count mismatches',
-    info: "Submitted pickups where the rider's count didn't match the parcels we cleared.",
-    alert: true,
-  },
 ];
 
 const cell = 'text-right font-mono text-[12px] tabular-nums';

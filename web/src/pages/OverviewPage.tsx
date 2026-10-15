@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useBriefs, useOverview } from '@/hooks/queries';
 import { useHoursFormatter } from '@/hooks/useClock';
 import { movementLink } from '@/hooks/useMovementFilter';
+import { BOARD_ALL_DATES } from '@/hooks/useScope';
 import { EXPLAIN } from '@/lib/explanations';
 import { formatCount, formatRelative } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -91,7 +92,7 @@ interface Figure {
 /** The return's journey, in the same words as the Board. */
 function figuresFor(o: OverviewResponse): Figure[] {
   return [
-    { label: STAGE_LABEL[Stage.EXPECTED], value: o.expected.total, note: 'On the way, not at our dock yet', info: EXPLAIN.expected, to: routes.board },
+    { label: STAGE_LABEL[Stage.EXPECTED], value: o.expected.total, note: 'On the way, not at our dock yet', info: EXPLAIN.expected, to: `${routes.board}${BOARD_ALL_DATES}` },
     {
       label: 'Arrived at dock today',
       value: o.receivedToday.total,
@@ -107,7 +108,7 @@ function figuresFor(o: OverviewResponse): Figure[] {
       to: routes.pending,
       late: o.carriedOver > 0,
     },
-    { label: STAGE_LABEL[Stage.MANIFESTED], value: o.manifested.total, note: 'In Uniware, putaway not closed yet', info: EXPLAIN.manifested, to: routes.board },
+    { label: STAGE_LABEL[Stage.MANIFESTED], value: o.manifested.total, note: 'In Uniware, putaway not closed yet', info: EXPLAIN.manifested, to: `${routes.board}${BOARD_ALL_DATES}` },
     {
       label: 'Closed today',
       value: o.closedToday.total,

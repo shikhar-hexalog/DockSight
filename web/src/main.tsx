@@ -12,11 +12,14 @@ import { BoardPage } from '@/pages/BoardPage';
 import { DispatchPage } from '@/pages/DispatchPage';
 import { ExceptionsPage } from '@/pages/ExceptionsPage';
 import { OverviewPage } from '@/pages/OverviewPage';
+import { ManifestPage } from '@/pages/ManifestPage';
 import { PendingPage } from '@/pages/PendingPage';
 import { PhoneScannerPage } from '@/pages/PhoneScannerPage';
+import { QcPage } from '@/pages/QcPage';
 import { ReceivePage } from '@/pages/ReceivePage';
 import { ReportsPage } from '@/pages/ReportsPage';
 import { ReturnsPage } from '@/pages/ReturnsPage';
+import { RoadmapPage } from '@/pages/RoadmapPage';
 import { SyncPage } from '@/pages/SyncPage';
 import { routes } from '@/routes';
 
@@ -40,6 +43,8 @@ const router = createBrowserRouter([
       { path: routes.overview, element: <OverviewPage /> },
       { path: routes.board, element: <BoardPage /> },
       { path: routes.receive, element: <ReceivePage /> },
+      { path: routes.manifest, element: <ManifestPage /> },
+      { path: routes.qc, element: <QcPage /> },
       { path: routes.dispatch, element: <DispatchPage /> },
       { path: routes.pending, element: <PendingPage /> },
       { path: routes.exceptions, element: <ExceptionsPage /> },
@@ -47,6 +52,7 @@ const router = createBrowserRouter([
       { path: routes.reports, element: <ReportsPage /> },
       { path: routes.returns, element: <ReturnsPage /> },
       { path: routes.sync, element: <SyncPage /> },
+      { path: routes.roadmap, element: <RoadmapPage /> },
     ],
   },
   // On the phone: full screen, no sidebar.
@@ -59,7 +65,7 @@ createRoot(document.getElementById('root')!).render(
       <TooltipProvider delayDuration={300}>
         <RouterProvider router={router} />
 
-        <Toaster position="top-center" />
+        <Toaster position="bottom-right" />
       </TooltipProvider>
     </QueryClientProvider>
   </StrictMode>

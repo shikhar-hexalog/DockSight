@@ -153,8 +153,11 @@ export type Scope = ReturnType<typeof useScope>;
 
 export const BOARD_SCOPE: ScopeOptions = {
   presets: [RangePreset.ALL, RangePreset.TODAY, RangePreset.YESTERDAY, RangePreset.LAST_7, RangePreset.LAST_30, RangePreset.CUSTOM],
-  defaultPreset: RangePreset.ALL,
+  defaultPreset: RangePreset.LAST_7,
 };
+
+/** The board over all dates, for links from all-time totals so the counts match. */
+export const BOARD_ALL_DATES = `?${PARAM.RANGE}=${RangePreset.ALL}`;
 
 export const REPORT_SCOPE: ScopeOptions = {
   presets: [RangePreset.LAST_7, RangePreset.LAST_14, RangePreset.LAST_30, RangePreset.CUSTOM],

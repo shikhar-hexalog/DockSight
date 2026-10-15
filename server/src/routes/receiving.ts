@@ -20,6 +20,7 @@ import {
 } from '@hexabuild/shared';
 
 import { UPLOADS_DIR, UPLOAD_NAME } from '../lib/uploads.ts';
+import { notifyDispatch } from '../notify/dispatchEmails.ts';
 import { batchParcels, getBatch, listBatches, setCondition, startBatch, submitBatch } from '../repo/batchesRepo.ts';
 import { removeHandoverCheck } from '../repo/dispatchRepo.ts';
 import { getDeskManifest, importSheet, listReceipts, recordScan, removeReceipt, resolveReceipt } from '../repo/receivingRepo.ts';
@@ -215,6 +216,14 @@ export function receivingRouter(sync: SyncService) {
 
       try {
         applyOp(parsed.data);
+
+        // Emails go out after the response; a slow mail server never holds up the desk.
+        if (parsed.data.kind === DeskOpKind.BATCH_SUBMIT) {
+          const { batchId } = parsed.data;
+
+          setImmediate(() => void notifyDispatch(batchId).catch(err => console.error('[mail] dispatch emails failed:', err)));
+        }
+
         return { id, ok: true, error: null };
       } catch (err) {
         return { id, ok: false, error: (err as Error).message };

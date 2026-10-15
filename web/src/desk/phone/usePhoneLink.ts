@@ -4,15 +4,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import {
-  type HandoverResult,
-  RemoteEvent,
-  RemoteRole,
-  type RemoteScan,
-  type RemoteSession,
-  type RemoteTarget,
-  type ScanResult,
-} from '@hexabuild/shared';
+import { RemoteEvent, RemoteRole, type RemoteOutcome, type RemoteScan, type RemoteSession, type RemoteTarget } from '@hexabuild/shared';
 
 import { api } from '@/lib/api';
 
@@ -108,7 +100,7 @@ export function usePhoneLink(target: RemoteTarget, onScan: (scan: RemoteScan) =>
   }, [target]);
 
   const report = useCallback(
-    (scanId: string, code: string, outcome: ScanResult | HandoverResult) => {
+    (scanId: string, code: string, outcome: RemoteOutcome) => {
       if (session) {
         void api.sendRemoteResult(session.id, { scanId, code, outcome }).catch(() => undefined);
       }

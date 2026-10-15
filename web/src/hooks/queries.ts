@@ -27,8 +27,12 @@ export const queryKeys = {
   receipts: (filters: ReceiptsFilters) => ['receipts', filters] as const,
   syncStatus: ['sync-status'] as const,
   holds: ['holds'] as const,
+  dispatchNotices: ['dispatch-notices'] as const,
   aiStatus: ['ai-status'] as const,
   briefs: ['briefs'] as const,
+  manifests: ['manifests'] as const,
+  manifest: (id: string) => ['manifest', id] as const,
+  qcRecent: ['qc-recent'] as const,
 };
 
 const BRIEFS_REFRESH_MS = 60_000;
@@ -74,6 +78,15 @@ export function useHolds() {
     queryKey: queryKeys.holds,
     queryFn: () => api.holds(),
     refetchInterval: HOLDS_REFRESH_MS,
+  });
+}
+
+// Emails go out a moment after a handover is submitted.
+export function useDispatchNotices() {
+  return useQuery({
+    queryKey: queryKeys.dispatchNotices,
+    queryFn: () => api.dispatchNotices(),
+    refetchInterval: LIVE_REFRESH_MS,
   });
 }
 
@@ -236,4 +249,42 @@ export function useDispatchReport(scope: ScopeFilters) {
     refetchInterval: REPORT_REFRESH_MS,
     placeholderData: previous => previous,
   });
+}
+
+export function useManifests() {
+  return useQuery({ queryKey: queryKeys.manifests, queryFn: api.manifests, refetchInterval: LIVE_REFRESH_MS });
+}
+
+export function useManifest(id: string | null) {
+  return useQuery({
+    queryKey: queryKeys.manifest(id ?? ''),
+    queryFn: () => api.manifest(id!),
+    enabled: id !== null,
+    refetchInterval: LIVE_REFRESH_MS,
+  });
+}
+
+export function useQcRecent() {
+  return useQuery({ queryKey: queryKeys.qcRecent, queryFn: api.qcRecent, refetchInterval: LIVE_REFRESH_MS });
+}
+
+export function useQcLookup() {
+  return useMutation({ mutationFn: api.qcLookup });
+}
+
+export function useSubmitQc() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: api.submitQc,
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.qcRecent });
+
+      void queryClient.invalidateQueries({ queryKey: ['manifest'] });
+    },
+  });
+}
+
+export function useQcCheck() {
+  return useMutation({ mutationFn: ({ returnId, photo }: { returnId: string; photo: string }) => api.qcCheck(returnId, photo) });
 }

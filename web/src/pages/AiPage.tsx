@@ -125,7 +125,7 @@ function Briefs() {
 export function AiPage() {
   return (
     <>
-      <PageHeader title="Briefs & questions" description="Briefs the AI writes from the latest data, and answers to questions in plain words." />
+      <PageHeader title="Briefs & questions" description="Smart briefs written from the latest data, and answers to questions in plain words." />
 
       <div className="grid min-h-0 flex-1 content-start gap-12 overflow-y-auto px-8 pt-2 pb-10 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] xl:gap-14">
         <AskPanel />

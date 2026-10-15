@@ -16,6 +16,7 @@ import {
 import { db, transaction } from '../db/index.ts';
 import { nowIso } from '../lib/time.ts';
 import { saveImage, uploadUrl } from '../lib/uploads.ts';
+import { createManifestFromBatch } from './workflowRepo.ts';
 
 type Row = Record<string, unknown>;
 
@@ -130,7 +131,7 @@ export function setCondition(op: ConditionOp) {
 /** Locks a batch with the photo of its signed sheet. Safe to repeat. */
 export function submitBatch(op: BatchSubmitOp) {
   transaction(() => {
-    const batch = db.prepare('SELECT status FROM receiving_batches WHERE id = ?').get(op.batchId);
+    const batch = db.prepare('SELECT status, kind FROM receiving_batches WHERE id = ?').get(op.batchId);
 
     if (!batch) {
       throw new Error('Batch not received yet');
@@ -150,6 +151,11 @@ export function submitBatch(op: BatchSubmitOp) {
       op.submittedBy,
       op.batchId
     );
+
+    // A receiving handover is also the courier's return manifest: no second scan.
+    if (batch.kind === BatchKind.RECEIVE) {
+      createManifestFromBatch(op.batchId);
+    }
   });
 }
 

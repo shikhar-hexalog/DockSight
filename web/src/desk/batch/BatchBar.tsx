@@ -1,15 +1,15 @@
 // The current handover at the top of the desk, and closing it:
 // rider's count -> print the sheet -> both sign -> photo of it -> submit.
 
-import { CircleAlert, CircleCheck, FileText, Printer } from 'lucide-react';
-import { type ReactNode, useState } from 'react';
+import { CircleCheck, FileText, Printer } from 'lucide-react';
+import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { BatchKind, type BatchStart } from '@hexabuild/shared';
 
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
 import { useDesk } from '@/desk/DeskProvider';
 import { formatCount } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -32,39 +32,52 @@ function Step({ n, title, done, children }: { n: number; title: string; done: bo
   );
 }
 
-function CountCheck({ scanned, courierCount }: { scanned: number; courierCount: number | null }) {
-  if (courierCount === null) {
-    return null;
-  }
+// Demo only: the sheet isn't actually read; the banner shows a check, then approves it.
+const SHEET_CHECK_MS = 2_000;
 
-  const difference = scanned - courierCount;
+function SheetCheck({ onApproved }: { onApproved: () => void }) {
+  const [checking, setChecking] = useState(true);
 
-  if (difference === 0) {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setChecking(false);
+
+      onApproved();
+    }, SHEET_CHECK_MS);
+
+    return () => clearTimeout(timer);
+  }, [onApproved]);
+
+  if (checking) {
     return (
-      <p className="flex items-center gap-1.5 text-sm text-ok">
-        <CircleCheck className="size-4" /> Matches the {formatCount(scanned)} scanned
+      <p className="flex items-center gap-2 rounded-lg border border-stage-expected/40 bg-stage-expected/5 px-3 py-2 text-sm">
+        <Spinner className="size-4" />
+        Smart check: reading the signed sheet…
       </p>
     );
   }
 
-  const message =
-    difference < 0
-      ? `Short by ${formatCount(-difference)}: find the missing parcels or note it on the sheet`
-      : `${formatCount(difference)} more scanned than the rider says`;
-
   return (
-    <p className="flex items-center gap-1.5 text-sm font-medium text-overdue">
-      <CircleAlert className="size-4" /> {message}
+    <p className="flex items-center gap-2 rounded-lg border border-ok/40 bg-ok/10 px-3 py-2 text-sm">
+      <CircleCheck className="size-4 text-ok" />
+      <span>
+        <span className="font-semibold">Approved.</span> Smart check found both signatures on the sheet.
+      </span>
     </p>
   );
 }
 
-function SheetPhoto({ photo, onPhoto }: { photo: string | null; onPhoto: (photo: string) => void }) {
+function SheetPhoto({ photo, onPhoto, onApproved }: { photo: string | null; onPhoto: (photo: string) => void; onApproved: () => void }) {
   return (
-    <div className="flex items-center gap-3">
-      <PhotoPicker onPhoto={onPhoto} cameraTitle="Photo of the signed handover sheet" allowPdf />
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-3">
+        <PhotoPicker onPhoto={onPhoto} cameraTitle="Photo of the signed handover sheet" allowPdf />
 
-      <SheetThumb photo={photo} />
+        <SheetThumb photo={photo} />
+      </div>
+
+      {/* A new upload restarts the check. */}
+      {photo && <SheetCheck key={photo} onApproved={onApproved} />}
     </div>
   );
 }
@@ -87,14 +100,12 @@ function SheetThumb({ photo }: { photo: string | null }) {
 }
 
 /** Words that differ between taking returns in and handing parcels out. */
-const COPY: Record<BatchKind, { countQuestion: string; scanned: string; submitted: string }> = {
+const COPY: Record<BatchKind, { scanned: string; submitted: string }> = {
   [BatchKind.RECEIVE]: {
-    countQuestion: 'How many parcels does the rider say they handed over?',
     scanned: 'parcels scanned',
     submitted: 'parcels from',
   },
   [BatchKind.DISPATCH]: {
-    countQuestion: 'How many parcels is the rider taking, by their count?',
     scanned: 'parcels cleared to go',
     submitted: 'parcels handed to',
   },
@@ -119,19 +130,24 @@ function FinishDialog({
 }: HandoverProps & { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { submitBatch } = useDesk();
 
-  const [countText, setCountText] = useState('');
-
   const [printed, setPrinted] = useState(false);
 
   const [photo, setPhoto] = useState<string | null>(null);
 
+  // Submit waits for the sheet check banner to say approved.
+  const [approved, setApproved] = useState(false);
+
+  const approve = useCallback(() => setApproved(true), []);
+
+  function onSheet(next: string) {
+    setPhoto(next);
+
+    setApproved(false);
+  }
+
   const [submitting, setSubmitting] = useState(false);
 
   const copy = COPY[kind];
-
-  const courierCount = countText.trim() === '' ? null : Number(countText);
-
-  const countValid = courierCount !== null && Number.isInteger(courierCount) && courierCount >= 0;
 
   function print() {
     setPrinted(true);
@@ -140,14 +156,15 @@ function FinishDialog({
   }
 
   async function submit() {
-    if (!countValid || !photo) {
+    if (!photo || !approved) {
       return;
     }
 
     setSubmitting(true);
 
     try {
-      await submitBatch(kind, { courierCount: courierCount!, signedSheet: photo });
+      // The rider's count isn't asked for: the parcels on the sheet stand for it.
+      await submitBatch(kind, { courierCount: count, signedSheet: photo });
 
       toast.success(`Handover submitted: ${formatCount(count)} ${copy.submitted} ${batch.courier}`);
 
@@ -169,30 +186,15 @@ function FinishDialog({
         </DialogHeader>
 
         <div className="flex flex-col gap-5">
-          <Step n={1} title={copy.countQuestion} done={countValid}>
-            <Input
-              type="number"
-              inputMode="numeric"
-              min={0}
-              value={countText}
-              onChange={e => setCountText(e.target.value)}
-              placeholder="Rider's count"
-              className="h-9 w-40"
-              autoFocus
-            />
-
-            <CountCheck scanned={count} courierCount={countValid ? courierCount : null} />
-          </Step>
-
-          <Step n={2} title="Print the handover sheet and get it signed by you and the rider" done={printed}>
-            <Button variant="outline" size="sm" className="self-start" onClick={print} disabled={!countValid}>
+          <Step n={1} title="Print the handover sheet and get it signed by you and the rider" done={printed}>
+            <Button variant="outline" size="sm" className="self-start" onClick={print}>
               <Printer />
               Print sheet
             </Button>
           </Step>
 
-          <Step n={3} title="Take a photo of the signed sheet, or upload a scan (photo or PDF)" done={photo !== null}>
-            <SheetPhoto photo={photo} onPhoto={setPhoto} />
+          <Step n={2} title="Take a photo of the signed sheet, or upload a scan (photo or PDF)" done={approved}>
+            <SheetPhoto photo={photo} onPhoto={onSheet} onApproved={approve} />
           </Step>
         </div>
 
@@ -201,12 +203,12 @@ function FinishDialog({
             Keep scanning
           </Button>
 
-          <Button onClick={() => void submit()} disabled={!countValid || !photo || submitting}>
+          <Button onClick={() => void submit()} disabled={!photo || !approved || submitting}>
             Submit handover
           </Button>
         </div>
 
-        {renderSheet(countValid ? courierCount : null)}
+        {renderSheet(null)}
       </DialogContent>
     </Dialog>
   );

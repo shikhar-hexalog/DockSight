@@ -9,6 +9,7 @@ import { remoteRouter } from './routes/remote.ts';
 import { reportsRouter } from './routes/reports.ts';
 import { returnsRouter } from './routes/returns.ts';
 import { syncRouter } from './routes/sync.ts';
+import { workflowRouter } from './routes/workflow.ts';
 import type { DispatchGuard } from './sync/dispatchGuard.ts';
 import type { SyncService } from './sync/syncService.ts';
 import { UniwareError } from './uniware/types.ts';
@@ -40,7 +41,6 @@ export function createApp(sync: SyncService, guard: DispatchGuard) {
     res.json({ ok: true });
   });
 
-
   app.use('/api', returnsRouter(sync));
 
   app.use('/api', syncRouter(sync));
@@ -56,6 +56,8 @@ export function createApp(sync: SyncService, guard: DispatchGuard) {
   app.use('/api', demoRouter());
 
   app.use('/api', remoteRouter());
+
+  app.use('/api', workflowRouter());
 
   app.use('/api', (_req, res) => {
     res.status(404).json({ error: 'Not found' });

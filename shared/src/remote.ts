@@ -4,11 +4,13 @@
 
 import type { HandoverResult } from './dispatch.ts';
 import type { ScanResult } from './receiving.ts';
+import type { QcLookupResult } from './workflow.ts';
 
 /** Which laptop screen the phone is scanning for. */
 export const RemoteTarget = {
   RECEIVE: 'receive',
   DISPATCH: 'dispatch',
+  QC: 'qc',
 } as const;
 
 export type RemoteTarget = (typeof RemoteTarget)[keyof typeof RemoteTarget];
@@ -16,7 +18,11 @@ export type RemoteTarget = (typeof RemoteTarget)[keyof typeof RemoteTarget];
 export const REMOTE_TARGET_LABEL: Record<RemoteTarget, string> = {
   [RemoteTarget.RECEIVE]: 'Receive returns',
   [RemoteTarget.DISPATCH]: 'Dispatch handover check',
+  [RemoteTarget.QC]: 'QC station',
 };
+
+/** Anything a laptop screen can report back for a scan. */
+export type RemoteOutcome = ScanResult | HandoverResult | QcLookupResult;
 
 export interface RemoteSession {
   id: string;
@@ -52,7 +58,7 @@ export interface RemoteScan {
 export interface RemoteResult {
   scanId: string;
   code: string;
-  outcome: ScanResult | HandoverResult;
+  outcome: RemoteOutcome;
 }
 
 export interface RemoteJoinResponse {
@@ -73,7 +79,7 @@ export const OutcomeTone = {
 
 export type OutcomeTone = (typeof OutcomeTone)[keyof typeof OutcomeTone];
 
-export const REMOTE_OUTCOME: Record<ScanResult | HandoverResult, { label: string; tone: OutcomeTone }> = {
+export const REMOTE_OUTCOME: Record<RemoteOutcome, { label: string; tone: OutcomeTone }> = {
   MATCHED: { label: 'Received', tone: OutcomeTone.GOOD },
   ALREADY_RECEIVED: { label: 'Already scanned', tone: OutcomeTone.REPEAT },
   ALREADY_PROCESSED: { label: 'Already processed in Uniware', tone: OutcomeTone.REPEAT },
@@ -83,4 +89,6 @@ export const REMOTE_OUTCOME: Record<ScanResult | HandoverResult, { label: string
   CLEAR: { label: 'OK to hand over', tone: OutcomeTone.GOOD },
   ALREADY_PULLED: { label: 'Already pulled out', tone: OutcomeTone.REPEAT },
   INVALID: { label: "Couldn't check", tone: OutcomeTone.BAD },
+  NOT_FOUND: { label: 'No return with this code', tone: OutcomeTone.BAD },
+  FOUND: { label: 'Opened on the QC screen', tone: OutcomeTone.GOOD },
 };

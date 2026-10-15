@@ -139,6 +139,11 @@ export const EventType = {
   RECEIVED_AT_DOCK: 'RECEIVED_AT_DOCK',
   /** A dock scan was taken back at the desk. */
   SCAN_REMOVED: 'SCAN_REMOVED',
+  /** Added to a return manifest in this app. */
+  MANIFEST_ADDED: 'MANIFEST_ADDED',
+  MANIFEST_REMOVED: 'MANIFEST_REMOVED',
+  /** Items graded at the QC station. */
+  QC_DONE: 'QC_DONE',
 } as const;
 
 export type EventType = (typeof EventType)[keyof typeof EventType];

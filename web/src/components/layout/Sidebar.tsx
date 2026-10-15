@@ -31,6 +31,8 @@ const NAV_GROUPS: NavGroup[] = [
       { to: routes.overview, label: 'Overview' },
       { to: routes.board, label: 'Board' },
       { to: routes.receive, label: 'Receive' },
+      { to: routes.manifest, label: 'Manifests' },
+      { to: routes.qc, label: 'QC' },
       { to: routes.dispatch, label: 'Dispatch', count: o => o.dispatch.open, urgent: true },
       { to: routes.pending, label: 'Pending in Uniware', count: o => o.pending.total },
       { to: routes.exceptions, label: 'Set aside', count: o => o.exceptionsOpen },
@@ -44,6 +46,10 @@ const NAV_GROUPS: NavGroup[] = [
       { to: routes.returns, label: 'All returns' },
       { to: routes.sync, label: 'Uniware sync' },
     ],
+  },
+  {
+    label: 'Future plan',
+    items: [{ to: routes.roadmap, label: 'Roadmap' }],
   },
 ];
 

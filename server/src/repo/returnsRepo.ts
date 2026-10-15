@@ -97,7 +97,7 @@ export function toSummary(row: Row): ReturnSummary {
   };
 }
 
-function toItem(row: Row): ReturnItem {
+export function toItem(row: Row): ReturnItem {
   return {
     id: String(row.id),
     saleOrderItemCode: String(row.sale_order_item_code),

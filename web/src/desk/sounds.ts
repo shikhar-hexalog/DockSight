@@ -1,7 +1,7 @@
 // Short tones so the person scanning doesn't have to look at the screen:
 // one high beep = fine, two mid beeps = already done, a low buzz = stop / set aside.
 
-import { HandoverResult, ScanResult } from '@hexabuild/shared';
+import { HandoverResult, OutcomeTone, ScanResult } from '@hexabuild/shared';
 
 export const Sound = {
   OK: 'ok',
@@ -76,3 +76,10 @@ export function playSound(sound: Sound) {
     // No audio device: the screen still shows the result.
   }
 }
+
+/** Any phone-scanner outcome, by how good the news is. */
+export const TONE_SOUND: Record<OutcomeTone, Sound> = {
+  [OutcomeTone.GOOD]: Sound.OK,
+  [OutcomeTone.REPEAT]: Sound.REPEAT,
+  [OutcomeTone.BAD]: Sound.ALERT,
+};

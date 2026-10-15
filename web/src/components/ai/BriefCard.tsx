@@ -29,7 +29,7 @@ function MockNote({ provider }: { provider: string }) {
     return null;
   }
 
-  return <p className="text-[12.5px] text-warn">Written in mock mode from fixed templates, not by the AI.</p>;
+  return <p className="text-[12.5px] text-warn">Written in mock mode from fixed templates, not by the smart engine.</p>;
 }
 
 /** A brief laid out for reading: headline, summary, sections, then actions. */
