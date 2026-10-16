@@ -100,7 +100,7 @@ Orders cancelled after their parcel was manifested, before the courier picked it
 
 ## AI
 
-AI runs on the Gemini API: set `GEMINI_API_KEY` in `.env` (and optionally `GEMINI_MODEL`, default `gemini-3.5-flash`, and `GEMINI_BACKUP_MODELS`, tried in order when it is busy). `AI_PROVIDER=claude-cli` still runs it through the Claude Code CLI instead; `AI_PROVIDER=mock` runs without AI.
+Smart checks use every AI engine with a key in `.env`, in turn: Groq (`GROQ_KEY`, free), Gemini (`GEMINI_API_KEY`, free), Meta (`META_KEY`, paid, from dev.meta.ai), then OpenAI (`OPENAI_KEY`, optional). Models are picked automatically from each engine's model list and refreshed every few hours; a busy, used-up or retired model is skipped and the next one tried, across engines. `AI_ENGINES` sets the order and `GEMINI_MODELS` / `META_MODELS` / `OPENAI_MODELS` pin models. `AI_PROVIDER=claude-cli` runs it through the Claude Code CLI instead; `AI_PROVIDER=mock` runs without AI.
 
 - **Briefs & questions** (`/ai`): a daily brief and shift handover notes, written at `BRIEF_DAILY_AT` / `BRIEF_HANDOVER_AT` and optionally posted to `BRIEF_WEBHOOK_URL`; and questions answered in plain words. The AI sees only a compact snapshot of the app's own data (`server/src/ai/snapshot.ts`), never customer details.
 - **Damaged-label fallback** (Receive page): a webcam photo or upload of the label; the AI lists the codes it can read, and each is checked against expected returns before anyone uses it. The webcam needs the page opened on the same computer (localhost).

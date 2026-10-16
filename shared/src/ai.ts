@@ -4,8 +4,16 @@ import type { ReturnType, Stage } from './constants.ts';
 
 /** Which engine writes AI answers. */
 export const AiProviderName = {
-  /** The Gemini API, with GEMINI_API_KEY from .env. */
+  /** Every engine with a key in .env, in turn: the router picks the model. */
+  AUTO: 'auto',
+  /** Only Groq (GROQ_KEY), free tier. */
+  GROQ: 'groq',
+  /** Only the Gemini API (GEMINI_API_KEY). */
   GEMINI: 'gemini',
+  /** Only Meta's Model API (META_KEY). */
+  META: 'meta',
+  /** Only the OpenAI API (OPENAI_KEY). */
+  OPENAI: 'openai',
   /** `claude -p` on the server machine, using the logged-in Claude subscription. */
   CLAUDE_CLI: 'claude-cli',
   /** Fixed answers built from the data, for development and tests. */

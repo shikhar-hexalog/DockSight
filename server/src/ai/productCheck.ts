@@ -157,7 +157,7 @@ Then one short note for the warehouse worker.`,
     return {
       check: null,
       provider: ai.name,
-      note: ai.name === AiProviderName.MOCK ? 'The smart check is in mock mode, so the photo was not checked. Set GEMINI_API_KEY in .env to enable it.' : null,
+      note: ai.name === AiProviderName.MOCK ? 'The smart check is in mock mode, so the photo was not checked. Add an AI key (GROQ_KEY or GEMINI_API_KEY) to .env to enable it.' : null,
     };
   }
 

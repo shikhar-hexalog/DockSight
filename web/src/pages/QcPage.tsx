@@ -33,6 +33,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useDesk } from '@/desk/DeskProvider';
 import { PhotoPicker } from '@/desk/batch/PhotoPicker';
+import { shrinkForCheck } from '@/desk/batch/compressImage';
 import { OperatorGate } from '@/desk/components/OperatorGate';
 import { ScanInput } from '@/desk/components/ScanInput';
 import { PhoneScannerButton } from '@/desk/phone/PhoneScannerButton';
@@ -651,7 +652,7 @@ function QcFlow({ target, onDone }: { target: QcReturn; onDone: (record: QcRecor
 
   const [grades, setGrades] = useState<Grades>(() => gradesFor(target.items, new Set()));
 
-  function onPhoto(next: string) {
+  async function onPhoto(next: string) {
     setPhoto(next);
 
     setStep(Step.CHECKING);
@@ -659,7 +660,7 @@ function QcFlow({ target, onDone }: { target: QcReturn; onDone: (record: QcRecor
     setAiFailed(false);
 
     runCheck.mutate(
-      { returnId: target.id, photo: next },
+      { returnId: target.id, photo: await shrinkForCheck(next) },
       {
         onSuccess: response => {
           setCheck(response.check);
