@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import type { ReturnDetail } from '@hexabuild/shared';
+import { RETURN_TYPE_LABEL, type ReturnDetail, STAGE_LABEL } from '@hexabuild/shared';
 
 import { Mono } from '@/components/common/Mono';
 import { QueryError } from '@/components/common/QueryError';
@@ -16,17 +16,15 @@ import { ReturnActivity } from './ReturnActivity';
 import { ReturnIdentifiers } from './ReturnIdentifiers';
 import { ReturnItems } from './ReturnItems';
 import { ReturnTimeline } from './ReturnTimeline';
-import { StageBadge } from './StageBadge';
 import { TimeBreakdown } from './TimeBreakdown';
-import { TypeTag } from './TypeTag';
 
 function Section({ title, aside, children }: { title: string; aside?: ReactNode; children: ReactNode }) {
   return (
-    <section className="border-t px-5 py-4">
-      <div className="mb-3 flex items-baseline justify-between">
-        <h3 className="text-[11px] font-medium tracking-wider text-muted-foreground uppercase">{title}</h3>
+    <section className="px-8 pt-7">
+      <div className="mb-1 flex items-baseline justify-between border-b border-ink pb-2">
+        <h3 className="font-display text-[15px] font-semibold text-ink">{title}</h3>
 
-        {aside}
+        <span className="text-[12.5px] text-muted-foreground">{aside}</span>
       </div>
 
       {children}
@@ -43,36 +41,34 @@ function HeaderAwb({ detail }: { detail: ReturnDetail }) {
   }
 
   return (
-    <p className="flex items-center gap-2 text-[13px]">
-      <span className="text-muted-foreground">AWB</span>
-
-      <Mono className="font-medium">{awb}</Mono>
+    <p className="mt-0.5 text-[13px] text-muted-foreground">
+      AWB <Mono className="text-[12.5px] font-medium text-ink">{awb}</Mono>
     </p>
   );
 }
 
 function DetailHeader({ detail }: { detail: ReturnDetail }) {
   return (
-    <SheetHeader className="gap-2 px-5 pt-5 pb-4">
-      <div className="flex items-center gap-2">
-        <TypeTag type={detail.type} />
+    <SheetHeader className="gap-0 px-8 pt-7 pb-0">
+      <SheetDescription className="pr-8 font-display text-[24px] leading-[1.15] font-semibold tracking-[-0.03em] text-ink">
+        {detail.firstItemName ?? 'Return'}
+      </SheetDescription>
 
-        <SheetTitle asChild>
-          <Mono className="text-[15px] font-semibold">{detail.sourceCode}</Mono>
-        </SheetTitle>
-      </div>
+      <SheetTitle asChild>
+        <p className="mt-1.5 text-[13px] font-normal text-muted-foreground">
+          {RETURN_TYPE_LABEL[detail.type]} · <Mono className="text-[12.5px] text-ink">{detail.sourceCode}</Mono>
+        </p>
+      </SheetTitle>
 
       <HeaderAwb detail={detail} />
 
-      <SheetDescription className="text-[13px]">{detail.firstItemName ?? 'Return'}</SheetDescription>
+      <p className="mt-4 flex items-baseline gap-1.5 text-[15px]">
+        <span className="font-semibold text-ink">{STAGE_LABEL[detail.stage]}</span>
 
-      <div className="flex items-center gap-2">
-        <StageBadge stage={detail.stage} />
+        <span className="text-muted-foreground">for</span>
 
-        <span className="text-xs text-muted-foreground">for</span>
-
-        <AgeInStage stage={detail.stage} since={detail.stageChangedAt} />
-      </div>
+        <AgeInStage stage={detail.stage} since={detail.stageChangedAt} className="text-[14px]" />
+      </p>
     </SheetHeader>
   );
 }
@@ -96,7 +92,7 @@ function DetailBody({ detail }: { detail: ReturnDetail }) {
         <DockArrival arrival={detail.dockArrival} />
       </Section>
 
-      <Section title="Items" aside={<span className="text-xs text-muted-foreground">{itemsLabel}</span>}>
+      <Section title="Items" aside={itemsLabel}>
         <ReturnItems items={detail.items} />
       </Section>
 
@@ -107,13 +103,15 @@ function DetailBody({ detail }: { detail: ReturnDetail }) {
       <Section title="Activity">
         <ReturnActivity events={detail.events} />
       </Section>
+
+      <div className="h-10" />
     </>
   );
 }
 
 function DetailSkeleton() {
   return (
-    <div className="flex flex-col gap-3 p-5">
+    <div className="flex flex-col gap-3 px-8 py-7">
       <Skeleton className="h-5 w-40" />
 
       <Skeleton className="h-4 w-64" />
@@ -134,7 +132,7 @@ function DetailContent({ id }: { id: string }) {
 
   if (error) {
     return (
-      <div className="p-5">
+      <div className="px-8 py-7">
         <SheetTitle className="sr-only">Return</SheetTitle>
 
         <QueryError error={error} onRetry={() => void refetch()} />
@@ -158,7 +156,7 @@ export function ReturnDetailSheet() {
 
   return (
     <Sheet open={openId !== null} onOpenChange={isOpen => !isOpen && close()}>
-      <SheetContent className="w-full gap-0 overflow-y-auto p-0 sm:max-w-[440px]">
+      <SheetContent className="w-full gap-0 overflow-y-auto p-0 data-[side=right]:w-full data-[side=right]:sm:max-w-[560px]">
         <OpenDetail id={openId} />
       </SheetContent>
     </Sheet>

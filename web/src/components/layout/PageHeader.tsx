@@ -6,27 +6,37 @@ interface PageHeaderProps {
   title: string;
   description?: string;
   actions?: ReactNode;
+  /** For pages that show sync themselves (Uniware sync) or don't need it (Roadmap). */
   hideSyncIndicator?: boolean;
 }
 
-function HeaderSync({ hidden }: { hidden: boolean }) {
+function Description({ text }: { text?: string }) {
+  if (!text) {
+    return null;
+  }
+
+  return <p className="mt-2 text-[13px] text-muted-foreground">{text}</p>;
+}
+
+/** When the data was last copied from Uniware: shown on every page, since the sidebar doesn't carry it. */
+function HeaderSync({ hidden }: { hidden?: boolean }) {
   if (hidden) {
     return null;
   }
 
-  return <SyncIndicator />;
+  return <SyncIndicator placement="page" />;
 }
 
-export function PageHeader({ title, description, actions, hideSyncIndicator = false }: PageHeaderProps) {
+export function PageHeader({ title, description, actions, hideSyncIndicator }: PageHeaderProps) {
   return (
-    <header className="flex flex-wrap items-end justify-between gap-4 border-b px-6 pt-5 pb-4">
+    <header className="flex flex-wrap items-end justify-between gap-4 px-8 pt-7 pb-3">
       <div className="min-w-0">
-        <h1 className="text-[17px] font-semibold tracking-tight">{title}</h1>
+        <h1 className="font-display text-[28px] leading-none font-semibold tracking-[-0.035em] text-ink">{title}</h1>
 
-        <p className="mt-0.5 text-[13px] text-muted-foreground">{description}</p>
+        <Description text={description} />
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-4">
         {actions}
 
         <HeaderSync hidden={hideSyncIndicator} />

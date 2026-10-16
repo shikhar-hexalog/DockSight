@@ -26,6 +26,8 @@ import { formatCount } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { routes } from '@/routes';
 
+import { HexalogLogo, HexalogMark } from './HexalogLogo';
+
 interface NavItem {
   to: string;
   label: string;
@@ -93,17 +95,22 @@ function Reveal({ expanded, className, children }: { expanded: boolean; classNam
   );
 }
 
+/** The cube alone on the closed rail; the full logo once open, the cube staying where it was. */
 function Brand({ expanded }: { expanded: boolean }) {
+  if (!expanded) {
+    return (
+      <div className="flex h-8 items-center pl-3.5">
+        <HexalogMark className="h-6 w-auto shrink-0" />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex items-center gap-2.5 pl-2.5">
-      <div className="grid size-7 shrink-0 place-items-center rounded-md bg-foreground font-mono text-[13px] font-semibold text-background">H</div>
+    <div className="flex h-8 items-center gap-2 pl-3.5 whitespace-nowrap">
+      <HexalogLogo className="h-6 w-auto shrink-0 text-ink" />
 
-      <Reveal expanded={expanded}>
-        <span className="leading-tight">
-          <span className="block text-[13px] font-semibold">Hexalog</span>
-
-          <span className="block text-[11px] text-muted-foreground">Returns desk</span>
-        </span>
+      <Reveal expanded={expanded} className="mt-1 text-[11.5px] text-muted-foreground">
+        Returns desk
       </Reveal>
     </div>
   );

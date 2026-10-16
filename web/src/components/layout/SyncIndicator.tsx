@@ -1,77 +1,51 @@
-import { RefreshCw } from 'lucide-react';
 import { Link } from 'react-router';
 
-import { SyncKind, SyncStatus, type SyncStatusResponse } from '@hexabuild/shared';
+import { SyncStatus, type SyncStatusResponse } from '@hexabuild/shared';
 
-import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { useRunSync, useSyncStatus } from '@/hooks/queries';
+import { useSyncStatus } from '@/hooks/queries';
 import { formatRelative } from '@/lib/format';
+import { cn } from '@/lib/utils';
 import { routes } from '@/routes';
 
-function SyncLabel({ status }: { status: SyncStatusResponse }) {
+/** Sidebar: light text on the dark sidebar. Page: dark text, for the page header on narrow screens. */
+type Placement = 'sidebar' | 'page';
+
+const LOOK: Record<Placement, { link: string; failed: string }> = {
+  sidebar: { link: 'text-sidebar-foreground hover:text-white', failed: 'text-[#ff8a8f]' },
+  page: { link: 'text-muted-foreground hover:text-foreground', failed: 'text-overdue' },
+};
+
+function SyncLabel({ status, placement }: { status: SyncStatusResponse; placement: Placement }) {
   const latest = status.runs[0];
 
   if (status.running) {
     return (
       <span className="flex items-center gap-1.5">
         <Spinner className="size-3" />
-        Syncing with Uniware
+        Syncing now
       </span>
     );
   }
 
   if (latest?.status === SyncStatus.FAILED) {
-    return (
-      <span className="flex items-center gap-1.5 text-overdue">
-        <span className="size-1.5 rounded-full bg-overdue" />
-        Last sync failed
-      </span>
-    );
+    return <span className={cn('font-medium', LOOK[placement].failed)}>Last sync failed</span>;
   }
 
-  return (
-    <span className="flex items-center gap-1.5">
-      <span className="size-1.5 rounded-full bg-ok" />
-      Synced {formatRelative(status.lastSuccessAt)}
-    </span>
-  );
+  return <span>Synced {formatRelative(status.lastSuccessAt)}</span>;
 }
 
-export function SyncIndicator() {
+/** When returns were last copied from Uniware. Opens the sync page, where a sync can be run by hand. */
+export function SyncIndicator({ placement = 'sidebar' }: { placement?: Placement }) {
   const { data } = useSyncStatus();
-
-  const runSync = useRunSync();
 
   if (!data) {
     return null;
   }
 
   return (
-    <div className="flex items-center gap-1">
-      <Link
-        to={routes.sync}
-        className="rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-      >
-        <SyncLabel status={data} />
-      </Link>
-
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            size="icon-sm"
-            variant="ghost"
-            aria-label="Sync now"
-            disabled={data.running || runSync.isPending}
-            onClick={() => runSync.mutate(SyncKind.INCREMENTAL)}
-          >
-            <RefreshCw className="size-3.5" />
-          </Button>
-        </TooltipTrigger>
-
-        <TooltipContent>Sync now</TooltipContent>
-      </Tooltip>
-    </div>
+    <Link to={routes.sync} className={cn('text-[12.5px] transition-colors', LOOK[placement].link)}>
+      <SyncLabel status={data} placement={placement} />
+    </Link>
   );
 }

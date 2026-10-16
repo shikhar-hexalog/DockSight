@@ -28,17 +28,17 @@ function FieldValue({ field }: { field: Field }) {
     return <Mono>{field.value}</Mono>;
   }
 
-  return <span className="text-[13px]">{field.value}</span>;
+  return <span className="text-[13.5px]">{field.value}</span>;
 }
 
 export function ReturnIdentifiers({ detail }: { detail: ReturnDetail }) {
   return (
-    <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2">
+    <dl className="grid grid-cols-[auto_1fr]">
       {fieldsFor(detail).map(field => (
         <div key={field.label} className="contents">
-          <dt className="text-[13px] text-muted-foreground">{field.label}</dt>
+          <dt className="border-b py-2 text-[13.5px] text-muted-foreground">{field.label}</dt>
 
-          <dd className="min-w-0 truncate text-right">
+          <dd className="min-w-0 truncate border-b py-2 pl-6 text-right text-ink">
             <FieldValue field={field} />
           </dd>
         </div>

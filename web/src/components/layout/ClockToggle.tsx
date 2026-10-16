@@ -1,12 +1,10 @@
-import { Clock } from 'lucide-react';
-
 import { CLOCK_MODE_LABEL, ClockMode } from '@hexabuild/shared';
 
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { TextToggle } from '@/components/common/TextToggle';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useClock } from '@/hooks/useClock';
 
-const CLOCK_MODES = [ClockMode.WORKING, ClockMode.ALL];
+const OPTIONS = [ClockMode.WORKING, ClockMode.ALL].map(mode => ({ value: mode, label: CLOCK_MODE_LABEL[mode] }));
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -17,25 +15,17 @@ export function ClockToggle() {
   const { mode, setMode, schedule } = useClock();
 
   return (
-    <div className="flex items-center gap-1.5">
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Clock className="size-3.5 text-muted-foreground" />
-        </TooltipTrigger>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div>
+          <TextToggle label="Count time in" options={OPTIONS} value={mode} onChange={setMode} />
+        </div>
+      </TooltipTrigger>
 
-        <TooltipContent className="max-w-xs">
-          Working hours counts only {timeOf(schedule.startMinutes)}–{timeOf(schedule.endMinutes)} on working days, so a parcel
-          arriving after closing starts waiting the next morning. "wd" = one working day.
-        </TooltipContent>
-      </Tooltip>
-
-      <ToggleGroup type="single" size="sm" variant="outline" value={mode} onValueChange={value => value && setMode(value as ClockMode)}>
-        {CLOCK_MODES.map(clock => (
-          <ToggleGroupItem key={clock} value={clock} className="px-3 text-xs">
-            {CLOCK_MODE_LABEL[clock]}
-          </ToggleGroupItem>
-        ))}
-      </ToggleGroup>
-    </div>
+      <TooltipContent className="max-w-xs">
+        Working hours counts only {timeOf(schedule.startMinutes)}–{timeOf(schedule.endMinutes)} on working days, so a parcel arriving after closing
+        starts waiting the next morning. "wd" = one working day.
+      </TooltipContent>
+    </Tooltip>
   );
 }

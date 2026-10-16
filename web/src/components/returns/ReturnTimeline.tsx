@@ -64,7 +64,7 @@ function StepGap({ steps, index }: { steps: TimelineStep[]; index: number }) {
   if (step.at) {
     const gap = new Date(step.at).getTime() - new Date(previous.at).getTime();
 
-    return <span className="font-mono text-[11px] text-muted-foreground tabular-nums">+{formatDuration(gap)}</span>;
+    return <span className="font-mono text-[12px] text-muted-foreground tabular-nums">+{formatDuration(gap)}</span>;
   }
 
   // A wait shows on the step right after the last one done, and only for the
@@ -85,30 +85,19 @@ function WaitingFor({ since, what }: { since: string; what: string }) {
   const clock = age.working ? ' working' : '';
 
   return (
-    <span className="font-mono text-[11px] font-medium text-overdue tabular-nums">
+    <span className="font-mono text-[12px] font-medium text-overdue tabular-nums">
       waiting for {what} {age.label}
       {clock}
     </span>
   );
 }
 
-function StepMarker({ done }: { done: boolean }) {
-  return (
-    <span
-      className={cn(
-        'relative z-10 mt-1 size-2.5 shrink-0 rounded-full border-2',
-        done ? 'border-foreground bg-foreground' : 'border-border bg-background'
-      )}
-    />
-  );
-}
-
 function StepTime({ at }: { at: string | null }) {
   if (!at) {
-    return <span className="text-xs text-muted-foreground">Not yet</span>;
+    return <span className="text-[13px] text-muted-foreground">Not yet</span>;
   }
 
-  return <span className="font-mono text-[11px] text-muted-foreground tabular-nums">{formatDateTime(at)}</span>;
+  return <span className="text-[13px] tabular-nums">{formatDateTime(at)}</span>;
 }
 
 /** The return's journey, with the time each step took. */
@@ -116,20 +105,16 @@ export function ReturnTimeline({ detail }: { detail: ReturnDetail }) {
   const steps = stepsFor(detail);
 
   return (
-    <ol className="relative flex flex-col gap-4 before:absolute before:top-2 before:bottom-2 before:left-[4px] before:w-px before:bg-border">
+    <ol>
       {steps.map((step, index) => (
-        <li key={step.label} className="flex items-start gap-3">
-          <StepMarker done={step.at !== null} />
+        <li key={step.label} className="grid grid-cols-[1fr_auto] items-baseline gap-x-4 border-b py-2.5 sm:grid-cols-[minmax(0,1fr)_150px_auto]">
+          <span className={cn('text-[13.5px]', step.at ? 'text-foreground' : 'text-muted-foreground')}>{step.label}</span>
 
-          <div className="flex min-w-0 flex-1 items-baseline justify-between gap-3">
-            <div className="flex flex-col">
-              <span className={cn('text-[13px]', step.at ? 'text-foreground' : 'text-muted-foreground')}>{step.label}</span>
+          <StepTime at={step.at} />
 
-              <StepTime at={step.at} />
-            </div>
-
+          <span className="col-span-2 text-right sm:col-span-1">
             <StepGap steps={steps} index={index} />
-          </div>
+          </span>
         </li>
       ))}
     </ol>
