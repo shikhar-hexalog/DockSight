@@ -65,7 +65,7 @@ export interface DispatchNotice {
 
 export interface DispatchNoticesResponse {
   data: DispatchNotice[];
-  /** Where the sent emails can be seen (Mailpit in the demo). */
+  /** Where the sent emails can be seen (the sender's Sent Items in Outlook). */
   inboxUrl: string;
 }
 

@@ -9,16 +9,14 @@
 // - Anything that failed (mail server down) is retried every few minutes.
 //
 // Demo: Uniware masks customer emails, so every email goes to MAIL_DEMO_TO
-// instead, through Mailpit unless SMTP_* says otherwise.
+// instead. Sent through Microsoft Graph (see mailer.ts).
 
 import { BatchKind, type DispatchNotice, HandoverResult } from '@hexabuild/shared';
-import nodemailer from 'nodemailer';
 
 import { config } from '../config.ts';
 import { db } from '../db/index.ts';
 import { nowIso } from '../lib/time.ts';
-
-const SEND_TIMEOUT_MS = 15_000;
+import { mailReady, sendEmail } from './mailer.ts';
 
 const RETRY_EVERY_MS = 5 * 60_000;
 
@@ -27,16 +25,6 @@ const RETRY_WITHIN_MS = 2 * 24 * 60 * 60_000;
 
 /** Handovers whose emails are being sent right now. */
 const sending = new Set<string>();
-
-const transport = nodemailer.createTransport({
-  host: config.mail.host,
-  port: config.mail.port,
-  secure: config.mail.port === 465,
-  auth: config.mail.user ? { user: config.mail.user, pass: config.mail.pass } : undefined,
-  connectionTimeout: SEND_TIMEOUT_MS,
-  greetingTimeout: SEND_TIMEOUT_MS,
-  socketTimeout: SEND_TIMEOUT_MS,
-});
 
 interface Parcel {
   id: string;
@@ -96,16 +84,6 @@ function emailFor(parcel: Parcel, courier: string, vehicleNo: string | null, dis
   };
 }
 
-const CONNECTION_CODES = new Set(['ESOCKET', 'ECONNECTION', 'ETIMEDOUT', 'ECONNREFUSED', 'EDNS']);
-
-function describeSendError({ message, code }: Error & { code?: string }): string {
-  if (code && CONNECTION_CODES.has(code)) {
-    return `can't reach the mail server at ${config.mail.host}:${config.mail.port} (is Mailpit running?)`;
-  }
-
-  return (message || code || 'the mail server did not accept it').slice(0, 200);
-}
-
 /** Emails the cleared parcels of a submitted dispatch handover that haven't had one yet. Receiving handovers are ignored. */
 export async function notifyDispatch(batchId: string): Promise<DispatchNotice | null> {
   if (sending.has(batchId)) {
@@ -152,14 +130,14 @@ async function sendPending(batchId: string, courier: string, vehicleNo: string |
   if (recipient) {
     for (const parcel of pending) {
       try {
-        await transport.sendMail({ from: `Hexalog Warehouse <${config.mail.from}>`, to: recipient, ...emailFor(parcel, courier, vehicleNo, submittedAt) });
+        await sendEmail({ to: recipient, ...emailFor(parcel, courier, vehicleNo, submittedAt) });
 
         // Recorded one by one, so a crash part-way never resends the ones that went.
         markSent.run(parcel.id, batchId, nowIso());
 
         sentNow++;
       } catch (err) {
-        error ??= describeSendError(err as Error & { code?: string });
+        error ??= (err as Error).message;
       }
     }
   }
@@ -196,6 +174,12 @@ function handoversWithPending(): string[] {
 
 /** Retries emails that didn't go out (mail server down, scans that arrived late). Returns a stop function. */
 export function startDispatchEmailRetry(): () => void {
+  console.log(
+    mailReady
+      ? `[mail] dispatch emails go through Microsoft Graph, from ${config.mail.from}${config.mail.demoTo ? ` to ${config.mail.demoTo} (demo)` : ''}`
+      : '[mail] dispatch emails are off: Microsoft Graph is not set up (GRAPH_TENANT_ID, GRAPH_CLIENT_ID, GRAPH_CLIENT_SECRET)'
+  );
+
   const timer = setInterval(() => {
     void (async () => {
       for (const batchId of handoversWithPending()) {
