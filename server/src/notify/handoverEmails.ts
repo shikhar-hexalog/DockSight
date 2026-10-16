@@ -15,10 +15,11 @@
 // Demo: Uniware masks customer emails, so every email goes to MAIL_DEMO_TO
 // instead. Sent through Microsoft Graph (see mailer.ts).
 
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { BatchKind, type DispatchNotice, HandoverResult, PARCEL_CONDITION_LABEL, type ParcelCondition, ScanResult } from '@hexabuild/shared';
+import { PDFDocument } from 'pdf-lib';
 
 import { config } from '../config.ts';
 import { db } from '../db/index.ts';
@@ -53,12 +54,41 @@ function formatTime(iso: string): string {
   return new Date(iso).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata' });
 }
 
-const CONTENT_TYPE: Record<string, string> = { jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp', pdf: 'application/pdf' };
-
 /** The handover's signed sheet, read once for all its emails: attached, too big to attach, or none. */
 type Sheet = { attachment: Attachment } | { tooBig: true } | null;
 
-function sheetFor(file: string | null, courier: string, submittedAt: string): Sheet {
+// A4 in PDF points, with a small margin around the photo.
+const A4 = { width: 595.28, height: 841.89, margin: 24 };
+
+/** A photo of the sheet as a one-page A4 PDF, so customers always get a PDF. */
+async function photoAsPdf(bytes: Buffer, extension: string): Promise<Buffer | null> {
+  if (extension !== 'jpg' && extension !== 'png') {
+    return null;
+  }
+
+  const pdf = await PDFDocument.create();
+
+  const image = extension === 'jpg' ? await pdf.embedJpg(bytes) : await pdf.embedPng(bytes);
+
+  // Landscape photos get a landscape page, so the sheet isn't shrunk.
+  const landscape = image.width > image.height;
+
+  const page = pdf.addPage(landscape ? [A4.height, A4.width] : [A4.width, A4.height]);
+
+  const room = { width: page.getWidth() - 2 * A4.margin, height: page.getHeight() - 2 * A4.margin };
+
+  const scale = Math.min(room.width / image.width, room.height / image.height, 1);
+
+  const [width, height] = [image.width * scale, image.height * scale];
+
+  page.drawImage(image, { x: (page.getWidth() - width) / 2, y: page.getHeight() - A4.margin - height, width, height });
+
+  pdf.setTitle('Signed handover sheet');
+
+  return Buffer.from(await pdf.save());
+}
+
+async function sheetFor(file: string | null, courier: string, submittedAt: string): Promise<Sheet> {
   if (!file || !UPLOAD_NAME.test(file)) {
     return null;
   }
@@ -69,22 +99,31 @@ function sheetFor(file: string | null, courier: string, submittedAt: string): Sh
     return null;
   }
 
-  if (statSync(path).size > MAX_ATTACHMENT_BYTES) {
+  const extension = file.split('.').pop()!;
+
+  const original = readFileSync(path);
+
+  // Uploaded as a PDF: sent as it is. A photo is turned into a PDF; if that fails, the photo itself goes.
+  const asPdf = extension === 'pdf' ? original : await photoAsPdf(original, extension).catch(() => null);
+
+  const data = asPdf ?? original;
+
+  if (data.length > MAX_ATTACHMENT_BYTES) {
     return { tooBig: true };
   }
 
-  const extension = file.split('.').pop()!;
-
-  const day = submittedAt.slice(0, 10);
+  const outExtension = asPdf ? 'pdf' : extension;
 
   return {
     attachment: {
-      name: `signed-handover-sheet-${courier.replace(/[^\w-]+/g, '-')}-${day}.${extension}`,
-      contentType: CONTENT_TYPE[extension] ?? 'application/octet-stream',
-      data: readFileSync(path),
+      name: `signed-handover-sheet-${courier.replace(/[^\w-]+/g, '-')}-${submittedAt.slice(0, 10)}.${outExtension}`,
+      contentType: asPdf ? 'application/pdf' : (CONTENT_TYPE[extension] ?? 'application/octet-stream'),
+      data,
     },
   };
 }
+
+const CONTENT_TYPE: Record<string, string> = { jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp', pdf: 'application/pdf' };
 
 function sheetLine(sheet: Sheet): string | null {
   if (!sheet) {
@@ -253,7 +292,7 @@ export async function notifyHandover(batchId: string): Promise<DispatchNotice | 
       vehicleNo: batch.vehicle_no === null ? null : String(batch.vehicle_no),
       submittedAt,
       // Read once and attached to every email of this handover.
-      sheet: sheetFor(batch.signed_sheet === null ? null : String(batch.signed_sheet), courier, submittedAt),
+      sheet: await sheetFor(batch.signed_sheet === null ? null : String(batch.signed_sheet), courier, submittedAt),
     });
   } finally {
     sending.delete(batchId);
