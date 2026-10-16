@@ -59,7 +59,7 @@ function ManifestList({ selectedId, onSelect }: { selectedId: string | null; onS
   const manifests = data?.data ?? [];
 
   if (manifests.length === 0) {
-    return <p className="px-1 text-xs text-muted-foreground">None yet. Submit a receiving handover to make one.</p>;
+    return <p className="text-[13px] text-muted-foreground">None yet. Submit a receiving handover to make one.</p>;
   }
 
   return (
@@ -87,20 +87,20 @@ function QcMark({ parcel }: { parcel: ManifestParcel }) {
 function ParcelsTable({ parcels }: { parcels: ManifestParcel[] }) {
   return (
     <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>AWB</TableHead>
-          <TableHead>Return</TableHead>
-          <TableHead>Item</TableHead>
-          <TableHead>Received</TableHead>
-          <TableHead>QC</TableHead>
+      <TableHeader className="[&_tr]:border-ink">
+        <TableRow className="hover:bg-transparent">
+          {['AWB', 'Return', 'Item', 'Received', 'QC'].map(column => (
+            <TableHead key={column} className="h-9 text-[12.5px] font-normal text-muted-foreground first:pl-0">
+              {column}
+            </TableHead>
+          ))}
         </TableRow>
       </TableHeader>
 
       <TableBody>
         {parcels.map(parcel => (
-          <TableRow key={parcel.returnId}>
-            <TableCell>
+          <TableRow key={parcel.returnId} className="text-[13.5px]">
+            <TableCell className="pl-0">
               <Mono>{parcel.code}</Mono>
             </TableCell>
 
@@ -188,7 +188,7 @@ export function ManifestPage() {
     <>
       <PageHeader title="Manifests" description="Made automatically from each receiving handover, one per courier drop. Next stop: QC." />
 
-      <div className="grid gap-6 px-6 py-6 lg:grid-cols-[240px_1fr]">
+      <div className="grid gap-8 px-8 py-6 lg:grid-cols-[240px_1fr]">
         <ManifestList selectedId={id} onSelect={select} />
 
         <SelectedView id={id} />

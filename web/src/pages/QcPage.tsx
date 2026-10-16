@@ -123,9 +123,9 @@ const mismatchedCodes = (check: QcMatchCheck) => new Set(check.items.filter(item
 function Fact({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex flex-col">
-      <span className="text-[11px] text-muted-foreground">{label}</span>
+      <span className="text-[12.5px] text-muted-foreground">{label}</span>
 
-      <span className="text-sm">{children}</span>
+      <span className="text-[14px] text-ink">{children}</span>
     </div>
   );
 }
@@ -203,7 +203,7 @@ function QcOperator() {
       <div className="flex items-center gap-3 text-sm">
         <span className="text-muted-foreground">QC by</span>
 
-        <span className="font-semibold">{scanner}</span>
+        <span className="font-semibold text-ink">{scanner}</span>
 
         <Button
           type="button"
@@ -233,7 +233,7 @@ function QcOperator() {
 
   return (
     <form onSubmit={submit} className="flex flex-wrap items-center gap-2 text-sm">
-      <span className="font-semibold">Who is doing QC?</span>
+      <span className="font-semibold text-ink">Who is doing QC?</span>
 
       <Input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" autoFocus className="h-9 w-56" />
 
@@ -490,7 +490,7 @@ function ItemRow({ item, value, locked, onChange }: ItemRowProps) {
         <ItemImage url={item.catalogImageUrl} />
 
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium">{item.itemName ?? 'Unnamed item'}</p>
+          <p className="truncate text-[13.5px] font-medium text-ink">{item.itemName ?? 'Unnamed item'}</p>
 
           <p className="text-xs text-muted-foreground">
             <Mono>{item.skuCode ?? '—'}</Mono> · {item.returnReason ?? 'no return reason'}
@@ -596,7 +596,9 @@ function ManualStep({ target, grades, locked, check, aiNote, onRetry, photo, onG
 
       <AiNote note={aiNote} onRetry={onRetry} />
 
-      <p className="text-sm font-semibold">{locked.size === target.items.length ? 'Moving to bad inventory' : 'Step 2 · Condition check'}</p>
+      <p className="border-b border-ink pb-2 font-display text-[20px] font-semibold tracking-[-0.01em] text-ink">
+        {locked.size === target.items.length ? 'Moving to bad inventory' : 'Step 2 · Condition check'}
+      </p>
 
       {target.items.map(item => (
         <ItemRow
@@ -835,26 +837,24 @@ function RecentQc() {
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      <h2 className="text-sm font-medium">Recent QC</h2>
+    <section>
+      <h2 className="border-b border-ink pb-2 font-display text-[16px] font-semibold tracking-[-0.01em] text-ink">Recent QC</h2>
 
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead>When</TableHead>
-            <TableHead>Return</TableHead>
-            <TableHead>Smart check</TableHead>
-            <TableHead>Result</TableHead>
-            <TableHead>Shelf</TableHead>
-            <TableHead>By</TableHead>
-            <TableHead>Uniware</TableHead>
+          <TableRow className="hover:bg-transparent">
+            {['When', 'Return', 'Smart check', 'Result', 'Shelf', 'By', 'Uniware'].map(column => (
+              <TableHead key={column} className="h-9 text-[12.5px] font-normal text-muted-foreground first:pl-0">
+                {column}
+              </TableHead>
+            ))}
           </TableRow>
         </TableHeader>
 
         <TableBody>
           {rows.map(row => (
-            <TableRow key={row.id}>
-              <TableCell className="text-muted-foreground">{formatDateTime(row.qcAt)}</TableCell>
+            <TableRow key={row.id} className="text-[13.5px]">
+              <TableCell className="pl-0 whitespace-nowrap text-muted-foreground tabular-nums">{formatDateTime(row.qcAt)}</TableCell>
 
               <TableCell>
                 <Mono>{row.sourceCode}</Mono>
@@ -879,7 +879,7 @@ function RecentQc() {
           ))}
         </TableBody>
       </Table>
-    </div>
+    </section>
   );
 }
 
@@ -935,7 +935,7 @@ export function QcPage() {
         actions={<PhoneScannerButton link={link} />}
       />
 
-      <div className="flex max-w-5xl flex-col gap-6 px-6 py-6">
+      <div className="flex max-w-5xl flex-col gap-6 px-8 py-6">
         <QcOperator />
 
         <ScanInput disabled={pending || !scanner} onScan={code => void open(code)} />
