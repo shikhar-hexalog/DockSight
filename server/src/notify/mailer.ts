@@ -7,12 +7,26 @@
 
 import { config } from '../config.ts';
 
+export interface Attachment {
+  name: string;
+  contentType: string;
+  data: Buffer;
+}
+
 export interface Email {
   to: string;
   subject: string;
   text: string;
   html: string;
+  attachments?: Attachment[];
 }
+
+/**
+ * Largest attachment sent with the email itself. Graph takes a sendMail
+ * request of up to 4 MB, and attachments grow by a third in base64; anything
+ * bigger would need Mail.ReadWrite to upload separately.
+ */
+export const MAX_ATTACHMENT_BYTES = 2.5 * 1024 * 1024;
 
 const TIMEOUT_MS = 15_000;
 
@@ -62,6 +76,12 @@ async function sendWithGraph(email: Email): Promise<void> {
           subject: email.subject,
           body: { contentType: 'HTML', content: email.html },
           toRecipients: [{ emailAddress: { address: email.to } }],
+          attachments: (email.attachments ?? []).map(file => ({
+            '@odata.type': '#microsoft.graph.fileAttachment',
+            name: file.name,
+            contentType: file.contentType,
+            contentBytes: file.data.toString('base64'),
+          })),
         },
         saveToSentItems: true,
       }),

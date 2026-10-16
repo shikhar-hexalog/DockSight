@@ -5,7 +5,7 @@ import { createApp } from './app.ts';
 import { config } from './config.ts';
 import { warmUpModels } from './ai/router.ts';
 import { migrate } from './db/index.ts';
-import { startDispatchEmailRetry } from './notify/dispatchEmails.ts';
+import { startHandoverEmailRetry } from './notify/handoverEmails.ts';
 import { DispatchGuard } from './sync/dispatchGuard.ts';
 import { SyncService } from './sync/syncService.ts';
 import { createSyncSources, describeSources } from './uniware/index.ts';
@@ -43,7 +43,7 @@ const server = app.listen(config.port, '0.0.0.0', () => {
 
   warmUpModels();
 
-  stopEmailRetry = startDispatchEmailRetry();
+  stopEmailRetry = startHandoverEmailRetry();
 });
 
 function shutdown() {

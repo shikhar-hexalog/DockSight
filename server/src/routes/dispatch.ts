@@ -12,7 +12,7 @@ import {
 
 import { config } from '../config.ts';
 import { nowIso } from '../lib/time.ts';
-import { listDispatchNotices, notifyDispatch } from '../notify/dispatchEmails.ts';
+import { listDispatchNotices, notifyHandover } from '../notify/handoverEmails.ts';
 import { listHolds, pullHold, recordHandoverCheck } from '../repo/dispatchRepo.ts';
 import type { DispatchGuard } from '../sync/dispatchGuard.ts';
 
@@ -109,10 +109,10 @@ export function dispatchRouter(guard: DispatchGuard) {
     });
 
     // Scans can reach the server after their handover was submitted: email those customers too.
-    // notifyDispatch ignores handovers that aren't submitted yet.
+    // notifyHandover ignores handovers that aren't submitted yet.
     setImmediate(() => {
       for (const batchId of handovers) {
-        void notifyDispatch(batchId).catch(err => console.error('[mail] dispatch emails failed:', err));
+        void notifyHandover(batchId).catch(err => console.error('[mail] dispatch emails failed:', err));
       }
     });
 

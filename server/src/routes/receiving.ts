@@ -20,7 +20,7 @@ import {
 } from '@hexabuild/shared';
 
 import { UPLOADS_DIR, UPLOAD_NAME } from '../lib/uploads.ts';
-import { notifyDispatch } from '../notify/dispatchEmails.ts';
+import { notifyHandover } from '../notify/handoverEmails.ts';
 import { batchParcels, discardBatch, getBatch, listBatches, setCondition, startBatch, submitBatch } from '../repo/batchesRepo.ts';
 import { removeHandoverCheck } from '../repo/dispatchRepo.ts';
 import { getDeskManifest, importSheet, listReceipts, recordScan, removeReceipt, resolveReceipt } from '../repo/receivingRepo.ts';
@@ -189,12 +189,18 @@ export function receivingRouter(sync: SyncService) {
 
     const results: Receipt[] = [];
 
+    const handovers = new Set<string>();
+
     for (const raw of scans) {
       const parsed = scanSchema.safeParse(raw);
 
       if (!parsed.success) {
         results.push(rejected(raw, parsed.error.issues[0]?.message ?? 'invalid'));
         continue;
+      }
+
+      if (parsed.data.batchId) {
+        handovers.add(parsed.data.batchId);
       }
 
       // A code we don't know may be a return Uniware has that we haven't synced yet.
@@ -208,6 +214,14 @@ export function receivingRouter(sync: SyncService) {
     const body: ReceiveResponse = { results };
 
     res.json(body);
+
+    // Scans can reach the server after their handover was submitted: email those customers too.
+    // notifyHandover ignores handovers that aren't submitted yet.
+    setImmediate(() => {
+      for (const batchId of handovers) {
+        void notifyHandover(batchId).catch(err => console.error('[mail] return emails failed:', err));
+      }
+    });
   });
 
   // Batch starts, condition tags and submissions, in the order they happened.
@@ -230,7 +244,7 @@ export function receivingRouter(sync: SyncService) {
         if (parsed.data.kind === DeskOpKind.BATCH_SUBMIT) {
           const { batchId } = parsed.data;
 
-          setImmediate(() => void notifyDispatch(batchId).catch(err => console.error('[mail] dispatch emails failed:', err)));
+          setImmediate(() => void notifyHandover(batchId).catch(err => console.error('[mail] handover emails failed:', err)));
         }
 
         return { id, ok: true, error: null };
