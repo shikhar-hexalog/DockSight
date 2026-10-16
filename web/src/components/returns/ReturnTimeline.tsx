@@ -28,11 +28,19 @@ function stepsFor(detail: ReturnDetail): TimelineStep[] {
     steps.push({ label: 'Courier says delivered (per Uniware)', at: detail.deliveredAt });
   }
 
+  // Uniware's own dates win; until then, saving our QC counts as processed and put away.
+  const processedHere = !detail.processedAt && detail.qcAt;
+
+  const putAwayHere = !detail.inventoryReceivedAt && detail.qcAt;
+
   return [
     ...steps,
     { label: dockLabel(detail), at: detail.dockReceivedAt },
-    { label: 'Processed in Uniware', at: detail.processedAt },
-    { label: 'Putaway closed (stock back in inventory)', at: detail.inventoryReceivedAt },
+    { label: processedHere ? 'Processed at our QC (Uniware not updated)' : 'Processed in Uniware', at: detail.processedAt ?? detail.qcAt },
+    {
+      label: putAwayHere ? 'Put away at our QC (Uniware not updated)' : 'Putaway closed (stock back in inventory)',
+      at: detail.inventoryReceivedAt ?? detail.qcAt,
+    },
   ];
 }
 

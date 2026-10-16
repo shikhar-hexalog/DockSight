@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { BatchKind, DeskOpKind, type DispatchHold, type DispatchNotice, HandoverResult, HoldStatus, PulledVia, RemoteTarget } from '@hexabuild/shared';
 
 import { type ExportFile, ExportMenu } from '@/components/common/ExportMenu';
+import { InfoTip } from '@/components/common/InfoTip';
 import { Mono } from '@/components/common/Mono';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,7 @@ import { useDesk } from '@/desk/DeskProvider';
 import { BatchBar } from '@/desk/batch/BatchBar';
 import { DispatchSheet } from '@/desk/batch/DispatchSheet';
 import { StartBatchForm } from '@/desk/batch/StartBatchForm';
+import { OperatorGate } from '@/desk/components/OperatorGate';
 import { ScanInput } from '@/desk/components/ScanInput';
 import { PhoneScannerButton } from '@/desk/phone/PhoneScannerButton';
 import { type PhoneLink, usePhoneLink } from '@/desk/phone/usePhoneLink';
@@ -329,7 +331,7 @@ function PickupCounts({ entries, queued }: { entries: HandoverEntry[]; queued: n
 function HandoverPanel({ handover }: { handover: Handover }) {
   const { dispatchBatch } = useDesk();
 
-  const { batchEntries, check, remove, queued, offline } = handover;
+  const { batchEntries, check, remove, clearBatch, queued, offline } = handover;
 
   if (!dispatchBatch) {
     return <StartBatchForm kind={BatchKind.DISPATCH} />;
@@ -345,6 +347,7 @@ function HandoverPanel({ handover }: { handover: Handover }) {
         count={cleared}
         renderSheet={courierCount => <DispatchSheet batch={dispatchBatch} entries={batchEntries} courierCount={courierCount} />}
         extra={<PickupCounts entries={batchEntries} queued={queued} />}
+        beforeDiscard={() => clearBatch(dispatchBatch.id)}
       />
 
       <ScanInput disabled={false} onScan={check} />
@@ -537,16 +540,35 @@ function Totals() {
   const { open, pulledToday, missedToday } = data.dispatch;
 
   const tiles = [
-    { label: 'To pull out now', value: open, tone: open > 0 ? 'text-overdue' : '' },
-    { label: 'Pulled out today (RTOs avoided)', value: pulledToday, tone: 'text-ok' },
-    { label: 'Handed over anyway today', value: missedToday, tone: missedToday > 0 ? 'text-overdue' : '' },
+    {
+      label: 'To pull out now',
+      value: open,
+      tone: open > 0 ? 'text-overdue' : '',
+      info: "Parcels whose order was cancelled after they were put on a courier manifest. Take each one out of the handover pile before the courier takes it, or it comes back as an RTO.",
+    },
+    {
+      label: 'Pulled out today (RTOs avoided)',
+      value: pulledToday,
+      tone: 'text-ok',
+      info: 'Cancelled-order parcels pulled out before the courier left today. Each one is a return that never happens.',
+    },
+    {
+      label: 'Handed over anyway today',
+      value: missedToday,
+      tone: missedToday > 0 ? 'text-overdue' : '',
+      info: "Cancelled-order parcels that still left with the courier today because they weren't pulled in time. They'll come back as RTOs.",
+    },
   ];
 
   return (
     <div className="grid grid-cols-3 divide-x border-b">
       {tiles.map(tile => (
         <div key={tile.label} className="flex flex-col gap-1 px-6 py-4">
-          <span className="text-xs text-muted-foreground">{tile.label}</span>
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            {tile.label}
+
+            <InfoTip text={tile.info} />
+          </span>
 
           <span className={cn('text-3xl font-semibold tracking-tight tabular-nums', tile.tone)}>{formatCount(tile.value)}</span>
         </div>
@@ -683,6 +705,8 @@ export function DispatchPage() {
           </>
         }
       />
+
+      <OperatorGate question="Who is checking this pickup?" action="Start checking" />
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         <Totals />

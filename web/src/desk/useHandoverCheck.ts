@@ -217,7 +217,22 @@ export function useHandoverCheck(checkedBy: string | null, batchId: string | nul
     [queueRemoval, setEntries]
   );
 
+  /** Forgets one handover's checks here, sent or not. The server drops its side with the discarded handover. */
+  const clearBatch = useCallback(
+    (clearedBatchId: string) => {
+      writeJson(
+        QUEUE_KEY,
+        readJson<HandoverCheck[]>(QUEUE_KEY, []).filter(c => c.batchId !== clearedBatchId)
+      );
+
+      setQueued(readJson<HandoverCheck[]>(QUEUE_KEY, []).length);
+
+      setEntries(prev => prev.filter(entry => entry.check.batchId !== clearedBatchId));
+    },
+    [setEntries]
+  );
+
   const batchEntries = batchId ? entries.filter(entry => entry.check.batchId === batchId) : [];
 
-  return { entries, batchEntries, check, remove, queued, offline, holds: cachedHolds };
+  return { entries, batchEntries, check, remove, clearBatch, queued, offline, holds: cachedHolds };
 }

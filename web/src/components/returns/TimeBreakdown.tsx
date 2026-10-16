@@ -13,7 +13,11 @@ export function TimeBreakdown({ detail }: { detail: ReturnDetail }) {
 
   const hours = useHoursFormatter();
 
-  const gaps = timeBreakdown({ inwardAt: detail.receivedAt, processedAt: detail.processedAt, putawayAt: detail.inventoryReceivedAt }, mode, schedule);
+  const gaps = timeBreakdown(
+    { inwardAt: detail.receivedAt, processedAt: detail.processedAt ?? detail.qcAt, putawayAt: detail.inventoryReceivedAt ?? detail.qcAt },
+    mode,
+    schedule
+  );
 
   return (
     <dl className="grid grid-cols-3 divide-x rounded-lg border">

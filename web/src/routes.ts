@@ -2,7 +2,6 @@ export const routes = {
   overview: '/',
   board: '/board',
   receive: '/receive',
-  manifest: '/manifest',
   qc: '/qc',
   dispatch: '/dispatch',
   pending: '/pending',

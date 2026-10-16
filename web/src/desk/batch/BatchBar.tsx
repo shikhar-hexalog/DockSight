@@ -1,16 +1,17 @@
 // The current handover at the top of the desk, and closing it:
 // rider's count -> print the sheet -> both sign -> photo of it -> submit.
 
-import { CircleCheck, FileText, Printer, Truck } from 'lucide-react';
-import { type ReactNode, useCallback, useEffect, useState } from 'react';
+import { CircleCheck, CircleX, FileText, Printer, RotateCcw, TriangleAlert, Truck } from 'lucide-react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-import { BatchKind, type BatchStart } from '@hexabuild/shared';
+import { BatchKind, type BatchStart, type SheetCheck, type SheetCheckResponse, SheetVerdict, SignatureState } from '@hexabuild/shared';
 
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner';
 import { useDesk } from '@/desk/DeskProvider';
+import { api } from '@/lib/api';
 import { formatCount } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
@@ -34,42 +35,208 @@ function Step({ n, title, done, children }: { n: number; title: string; done: bo
   );
 }
 
-// Demo only: the sheet isn't actually read; the banner shows a check, then approves it.
-const SHEET_CHECK_MS = 2_000;
+type SheetCheckState = { status: 'checking' } | { status: 'done'; response: SheetCheckResponse } | { status: 'failed'; message: string };
 
-function SheetCheck({ onApproved }: { onApproved: () => void }) {
-  const [checking, setChecking] = useState(true);
+/** May the handover be submitted on this check? Only a clearly unsigned box or another document holds it back. */
+function allowsSubmit(state: SheetCheckState): boolean {
+  if (state.status !== 'done' || !state.response.check) {
+    return state.status !== 'checking';
+  }
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setChecking(false);
+  const blocking: SheetVerdict[] = [SheetVerdict.MISSING_SIGNATURE, SheetVerdict.NOT_A_SHEET];
 
-      onApproved();
-    }, SHEET_CHECK_MS);
+  return !blocking.includes(state.response.check.verdict);
+}
 
-    return () => clearTimeout(timer);
-  }, [onApproved]);
+function missingWho(check: SheetCheck): string {
+  const warehouse = check.warehouseSignature === SignatureState.MISSING;
 
-  if (checking) {
+  const rider = check.riderSignature === SignatureState.MISSING;
+
+  if (warehouse && rider) {
+    return 'Both signatures are missing';
+  }
+
+  if (warehouse) {
+    return 'The warehouse signature is missing';
+  }
+
+  return "The rider's signature is missing";
+}
+
+function Banner({ tone, children }: { tone: 'ok' | 'warn' | 'bad'; children: ReactNode }) {
+  const toneClass = { ok: 'border-ok/40 bg-ok/10', warn: 'border-warn/50 bg-warn/10', bad: 'border-overdue/40 bg-overdue/10' }[tone];
+
+  return <div className={cn('flex items-start gap-2 rounded-lg border px-3 py-2 text-sm', toneClass)}>{children}</div>;
+}
+
+/** The sheet's count against this handover's: a difference is worth a look, not a stop. */
+function CountWarning({ check, parcels }: { check: SheetCheck; parcels: number }) {
+  if (check.countOnSheet === null || check.countOnSheet === parcels) {
+    return null;
+  }
+
+  return (
+    <Banner tone="warn">
+      <TriangleAlert className="mt-0.5 size-4 shrink-0 text-warn" />
+      <span>
+        The sheet shows {formatCount(check.countOnSheet)} parcels; this handover has {formatCount(parcels)}. Check before submitting.
+      </span>
+    </Banner>
+  );
+}
+
+function CheckOutcome({ check, parcels }: { check: SheetCheck; parcels: number }) {
+  if (check.verdict === SheetVerdict.APPROVED) {
     return (
-      <p className="flex items-center gap-2 rounded-lg border border-stage-expected/40 bg-stage-expected/5 px-3 py-2 text-sm">
-        <Spinner className="size-4" />
-        Smart check: reading the signed sheet…
-      </p>
+      <>
+        <Banner tone="ok">
+          <CircleCheck className="mt-0.5 size-4 shrink-0 text-ok" />
+          <span>
+            <span className="font-semibold">Approved.</span> Smart check found both signatures ({check.seconds}s).
+          </span>
+        </Banner>
+
+        <CountWarning check={check} parcels={parcels} />
+      </>
+    );
+  }
+
+  if (check.verdict === SheetVerdict.MISSING_SIGNATURE) {
+    return (
+      <Banner tone="bad">
+        <CircleX className="mt-0.5 size-4 shrink-0 text-overdue" />
+        <span>
+          <span className="font-semibold">Not approved.</span> {missingWho(check)}. Get it signed and take the photo again.
+        </span>
+      </Banner>
+    );
+  }
+
+  if (check.verdict === SheetVerdict.NOT_A_SHEET) {
+    return (
+      <Banner tone="bad">
+        <CircleX className="mt-0.5 size-4 shrink-0 text-overdue" />
+        <span>
+          <span className="font-semibold">Not approved.</span> This doesn't look like the handover sheet. Take a photo of the printed, signed sheet.
+        </span>
+      </Banner>
     );
   }
 
   return (
-    <p className="flex items-center gap-2 rounded-lg border border-ok/40 bg-ok/10 px-3 py-2 text-sm">
-      <CircleCheck className="size-4 text-ok" />
+    <Banner tone="warn">
+      <TriangleAlert className="mt-0.5 size-4 shrink-0 text-warn" />
       <span>
-        <span className="font-semibold">Approved.</span> Smart check found both signatures on the sheet.
+        <span className="font-semibold">Couldn't confirm both signatures.</span> {check.note} Check them yourself before submitting.
       </span>
-    </p>
+    </Banner>
   );
 }
 
-function SheetPhoto({ photo, onPhoto, onApproved }: { photo: string | null; onPhoto: (photo: string) => void; onApproved: () => void }) {
+function SheetCheckBanner({ state, parcels }: { state: SheetCheckState; parcels: number }) {
+  if (state.status === 'checking') {
+    return (
+      <Banner tone="ok">
+        <Spinner className="mt-0.5 size-4" />
+        Smart check: reading the signed sheet…
+      </Banner>
+    );
+  }
+
+  if (state.status === 'failed') {
+    return (
+      <Banner tone="warn">
+        <TriangleAlert className="mt-0.5 size-4 shrink-0 text-warn" />
+        <span>Couldn't check the sheet ({state.message}). Check both signatures yourself before submitting.</span>
+      </Banner>
+    );
+  }
+
+  if (!state.response.check) {
+    return (
+      <Banner tone="warn">
+        <TriangleAlert className="mt-0.5 size-4 shrink-0 text-warn" />
+        <span>{state.response.note ?? 'The smart check is off.'} Check both signatures yourself before submitting.</span>
+      </Banner>
+    );
+  }
+
+  return <CheckOutcome check={state.response.check} parcels={parcels} />;
+}
+
+/**
+ * The AI reads the signed sheet. Both boxes signed approves it; a clearly
+ * unsigned box or another document holds the handover back. When the AI can't
+ * tell or isn't available, the person checks and may still submit.
+ */
+function SheetCheckPanel({
+  photo,
+  parcels,
+  courier,
+  onChecked,
+}: {
+  photo: string;
+  parcels: number;
+  courier: string;
+  onChecked: (allowed: boolean) => void;
+}) {
+  const [state, setState] = useState<SheetCheckState>({ status: 'checking' });
+
+  useEffect(() => {
+    let current = true;
+
+    function settle(next: SheetCheckState) {
+      if (!current) {
+        return;
+      }
+
+      setState(next);
+
+      onChecked(allowsSubmit(next));
+    }
+
+    api
+      .checkSheet({ sheet: photo, parcels, courier })
+      .then(response => settle({ status: 'done', response }))
+      .catch((error: Error) => settle({ status: 'failed', message: error.message }));
+
+    return () => {
+      current = false;
+    };
+  }, [photo, parcels, courier, onChecked]);
+
+  return <SheetCheckBanner state={state} parcels={parcels} />;
+}
+
+function SheetCheckFor({
+  photo,
+  parcels,
+  courier,
+  onChecked,
+}: {
+  photo: string | null;
+  parcels: number;
+  courier: string;
+  onChecked: (allowed: boolean) => void;
+}) {
+  if (!photo) {
+    return null;
+  }
+
+  // A new upload restarts the check.
+  return <SheetCheckPanel key={photo} photo={photo} parcels={parcels} courier={courier} onChecked={onChecked} />;
+}
+
+interface SheetPhotoProps {
+  photo: string | null;
+  parcels: number;
+  courier: string;
+  onPhoto: (photo: string) => void;
+  onChecked: (allowed: boolean) => void;
+}
+
+function SheetPhoto({ photo, parcels, courier, onPhoto, onChecked }: SheetPhotoProps) {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-3">
@@ -78,8 +245,7 @@ function SheetPhoto({ photo, onPhoto, onApproved }: { photo: string | null; onPh
         <SheetThumb photo={photo} />
       </div>
 
-      {/* A new upload restarts the check. */}
-      {photo && <SheetCheck key={photo} onApproved={onApproved} />}
+      <SheetCheckFor photo={photo} parcels={parcels} courier={courier} onChecked={onChecked} />
     </div>
   );
 }
@@ -136,10 +302,8 @@ function FinishDialog({
 
   const [photo, setPhoto] = useState<string | null>(null);
 
-  // Submit waits for the sheet check banner to say approved.
+  // Submit waits for the sheet check: allowed unless it found a missing signature or another document.
   const [approved, setApproved] = useState(false);
-
-  const approve = useCallback(() => setApproved(true), []);
 
   function onSheet(next: string) {
     setPhoto(next);
@@ -196,7 +360,7 @@ function FinishDialog({
           </Step>
 
           <Step n={2} title="Take a photo of the signed sheet, or upload a scan (photo or PDF)" done={approved}>
-            <SheetPhoto photo={photo} onPhoto={onSheet} onApproved={approve} />
+            <SheetPhoto photo={photo} parcels={count} courier={batch.courier} onPhoto={onSheet} onChecked={setApproved} />
           </Step>
         </div>
 
@@ -216,14 +380,92 @@ function FinishDialog({
   );
 }
 
+/** What starting fresh costs, in the words of this kind of handover. */
+function discardWarning(kind: BatchKind, count: number): string {
+  const ask = 'You will be asked for the courier and vehicle number again.';
+
+  if (count === 0 && kind === BatchKind.DISPATCH) {
+    return `No parcels are cleared to go yet; any checks made so far are dropped. ${ask}`;
+  }
+
+  if (count === 0) {
+    return `No parcels are in this handover yet; anything set aside from it is dropped too. ${ask}`;
+  }
+
+  if (kind === BatchKind.DISPATCH) {
+    return `The ${formatCount(count)} parcels checked so far are taken off this pickup, and it is not recorded. ${ask}`;
+  }
+
+  return `The ${formatCount(count)} parcels scanned so far are taken back (they go back to expected), and this handover is not recorded. ${ask}`;
+}
+
+function StartFreshDialog({
+  kind,
+  count,
+  beforeDiscard,
+  open,
+  onOpenChange,
+}: {
+  kind: BatchKind;
+  count: number;
+  beforeDiscard?: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { discardBatch } = useDesk();
+
+  const [working, setWorking] = useState(false);
+
+  async function startFresh() {
+    setWorking(true);
+
+    try {
+      beforeDiscard?.();
+
+      await discardBatch(kind);
+
+      toast.success('Handover discarded. Start a new one.');
+
+      onOpenChange(false);
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Start fresh?</DialogTitle>
+
+          <DialogDescription>{discardWarning(kind, count)}</DialogDescription>
+        </DialogHeader>
+
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            Keep this handover
+          </Button>
+
+          <Button variant="destructive" onClick={() => void startFresh()} disabled={working}>
+            Start fresh
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 /**
- * Who, which courier, how many so far; and the way to close it.
- * `extra`: tallies and sync status, shown before the finish button.
+ * Who, which courier, how many so far; and the way to close it, or to give it up and start over.
+ * `extra`: tallies and sync status, shown before the buttons.
+ * `beforeDiscard`: anything this screen keeps for the handover, cleared when it is given up.
  */
-export function BatchBar({ extra, ...handover }: HandoverProps & { extra?: ReactNode }) {
+export function BatchBar({ extra, beforeDiscard, ...handover }: HandoverProps & { extra?: ReactNode; beforeDiscard?: () => void }) {
   const { batch, count } = handover;
 
   const [finishing, setFinishing] = useState(false);
+
+  const [startingFresh, setStartingFresh] = useState(false);
 
   const vehicle = batch.vehicleNo ? ` · ${batch.vehicleNo}` : '';
 
@@ -245,10 +487,17 @@ export function BatchBar({ extra, ...handover }: HandoverProps & { extra?: React
       <div className="flex flex-wrap items-center gap-3">
         {extra}
 
+        <Button size="sm" variant="outline" onClick={() => setStartingFresh(true)}>
+          <RotateCcw />
+          Start fresh
+        </Button>
+
         <Button size="sm" onClick={() => setFinishing(true)} disabled={count === 0}>
           Finish handover
         </Button>
       </div>
+
+      <StartFreshDialog kind={handover.kind} count={count} beforeDiscard={beforeDiscard} open={startingFresh} onOpenChange={setStartingFresh} />
 
       <FinishDialog {...handover} open={finishing} onOpenChange={setFinishing} />
     </div>

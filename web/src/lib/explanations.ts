@@ -24,6 +24,7 @@ export const EXPLAIN = {
   closedToday:
     "Putaway closed today: stock back in inventory. 'No dock scan' = never scanned at our desk or listed in the receiving sheet, usually parcels still received the old way.",
   shiftBrief: 'A smart summary for the shift change, made from the live numbers. Click to read the full note.',
+  flow: `The typical time a return takes from one stage to the next, for the returns that made each step in the last 7 days. Half were faster. Expected to arrived is time with the courier (Uniware created date to our dock scan), always counted in all hours. Arrived to manifested is dock scan to processed in Uniware; manifested to putaway is processed to inventory received. ${TIME_NOTE}`,
 
   // Overview panels
   pendingAges: `Every return in Pending in Uniware, grouped by how long it has been at our dock without being processed. Over 1 working day counts as late. ${TIME_NOTE}`,

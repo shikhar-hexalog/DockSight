@@ -12,7 +12,6 @@ import { BoardPage } from '@/pages/BoardPage';
 import { DispatchPage } from '@/pages/DispatchPage';
 import { ExceptionsPage } from '@/pages/ExceptionsPage';
 import { OverviewPage } from '@/pages/OverviewPage';
-import { ManifestPage } from '@/pages/ManifestPage';
 import { PendingPage } from '@/pages/PendingPage';
 import { PhoneScannerPage } from '@/pages/PhoneScannerPage';
 import { QcPage } from '@/pages/QcPage';
@@ -43,7 +42,6 @@ const router = createBrowserRouter([
       { path: routes.overview, element: <OverviewPage /> },
       { path: routes.board, element: <BoardPage /> },
       { path: routes.receive, element: <ReceivePage /> },
-      { path: routes.manifest, element: <ManifestPage /> },
       { path: routes.qc, element: <QcPage /> },
       { path: routes.dispatch, element: <DispatchPage /> },
       { path: routes.pending, element: <PendingPage /> },

@@ -14,6 +14,8 @@ import {
   ClockMode,
   type DispatchDay,
   type DispatchReportResponse,
+  FLOW_WINDOW_DAYS,
+  type FlowStep,
   HandoverResult,
   HoldStatus,
   type CourierPending,
@@ -192,6 +194,44 @@ function pendingByCourier(clock: ClockMode, now: Date): CourierPending[] {
     .slice(0, PENDING_COURIERS_SHOWN);
 }
 
+interface FlowLeg {
+  from: Stage;
+  to: Stage;
+  /** The column that marks reaching each stage. */
+  fromSql: string;
+  toSql: string;
+  /** Time with the courier always runs; time inside the warehouse follows the chosen clock. */
+  courier: boolean;
+}
+
+// The return's journey, stage by stage. Manifested = Uniware's processed
+// date (the stage's own timestamp); putaway closed = inventory received.
+const FLOW_LEGS: FlowLeg[] = [
+  { from: Stage.EXPECTED, to: Stage.RECEIVED, fromSql: 'r.source_created_at', toSql: RECEIVED_AT_SQL, courier: true },
+  { from: Stage.RECEIVED, to: Stage.MANIFESTED, fromSql: RECEIVED_AT_SQL, toSql: 'r.processed_at', courier: false },
+  { from: Stage.MANIFESTED, to: Stage.CLOSED, fromSql: 'r.processed_at', toSql: 'r.inventory_received_at', courier: false },
+];
+
+/** Median time of each step, over the returns that completed that step in the last FLOW_WINDOW_DAYS days. */
+function stageFlow(clock: ClockMode, now: Date): FlowStep[] {
+  const since = new Date(now.getTime() - FLOW_WINDOW_DAYS * DAY_MS).toISOString();
+
+  return FLOW_LEGS.map(leg => {
+    const rows = db
+      .prepare(
+        `SELECT ${leg.fromSql} AS from_at, ${leg.toSql} AS to_at FROM returns r
+         WHERE ${leg.toSql} >= :since AND ${leg.fromSql} IS NOT NULL AND ${leg.toSql} >= ${leg.fromSql} AND r.stage != :cancelled`
+      )
+      .all({ since, cancelled: Stage.CANCELLED });
+
+    const legClock = leg.courier ? ClockMode.ALL : clock;
+
+    const hours = rows.map(row => hoursOn(legClock, String(row.from_at), String(row.to_at))).sort((a, b) => a - b);
+
+    return { from: leg.from, to: leg.to, medianHours: percentile(hours, 0.5), clock: legClock, count: hours.length };
+  });
+}
+
 export function getOverview(guard: GuardStatus, clock: ClockMode = ClockMode.WORKING): OverviewResponse {
   const now = new Date();
 
@@ -215,6 +255,7 @@ export function getOverview(guard: GuardStatus, clock: ClockMode = ClockMode.WOR
     pendingByCourier: pendingByCourier(clock, now),
     exceptionsOpen: countOpenExceptions(),
     tatTodayMedianHours: percentile(tatHours(clock, dayStart, tomorrow), 0.5),
+    flow: stageFlow(clock, now),
     dispatch: { ...dispatchCounts(dayStart), guard },
     batches: batchCounts(new Date(now.getTime() - BATCH_UNSIGNED_WARN_HOURS * HOUR_MS).toISOString()),
   };

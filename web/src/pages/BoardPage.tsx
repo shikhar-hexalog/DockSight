@@ -33,11 +33,11 @@ export function BoardPage() {
 
             <ClientFilter scope={scope} />
 
-            {/* A card is in the period if it reached its column then: created, arrived or processed. */}
+            {/* A card is in the period if it reached its column then: created, arrived, processed or put away. */}
             <DateRangeFilter
               scope={scope}
               label="Reached stage"
-              hint="shows a card if it reached its current column in this period: created (Expected), arrived at the dock (Pending), processed (Processed)"
+              hint="shows a card if it reached its current column in this period: created (Expected), arrived at the dock (Pending in Uniware), processed in Uniware (Manifested), putaway closed (Closed)"
             />
 
             <TypeFilter />

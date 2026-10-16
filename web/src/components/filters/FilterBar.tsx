@@ -26,6 +26,8 @@ const timeOf = (minutes: number) => `${pad(Math.floor(minutes / 60))}:${pad(minu
 /** A small caption + control, so each filter says what it is. */
 /** An icon (with its name and meaning on hover) and its control; no text label, to keep the row on one line. */
 function Field({ icon, label, hint, children }: { icon: ReactNode; label: string; hint?: string; children: ReactNode }) {
+  const hintText = hint ? `: ${hint}` : '';
+
   return (
     <div className="flex items-center gap-1.5">
       <Tooltip>
@@ -36,8 +38,11 @@ function Field({ icon, label, hint, children }: { icon: ReactNode; label: string
         </TooltipTrigger>
 
         <TooltipContent className="max-w-xs text-xs leading-relaxed">
-          <span className="font-medium">{label}</span>
-          {hint ? `: ${hint}` : ''}
+          {/* One paragraph, so the label and the hint flow as one sentence instead of two columns. */}
+          <p>
+            <span className="font-medium">{label}</span>
+            {hintText}
+          </p>
         </TooltipContent>
       </Tooltip>
 

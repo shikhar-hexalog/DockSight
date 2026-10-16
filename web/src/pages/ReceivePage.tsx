@@ -12,6 +12,7 @@ import { ConditionPanel } from '@/desk/batch/ConditionPanel';
 import { StartBatchForm } from '@/desk/batch/StartBatchForm';
 import { LabelReaderDialog } from '@/desk/components/LabelReaderDialog';
 import { LastScanCard } from '@/desk/components/LastScanCard';
+import { OperatorGate } from '@/desk/components/OperatorGate';
 import { ScanInput } from '@/desk/components/ScanInput';
 import { ScanLog } from '@/desk/components/ScanLog';
 import type { DeskScanEntry } from '@/desk/localDb';
@@ -71,7 +72,6 @@ function countersFor(entries: DeskScanEntry[]): Counter[] {
   return [
     { label: 'Received', value: count([ScanResult.MATCHED]) },
     { label: 'Set aside', value: count(EXCEPTION_RESULTS), alert: count(EXCEPTION_RESULTS) > 0 },
-    { label: 'Repeats', value: count([ScanResult.ALREADY_RECEIVED, ScanResult.ALREADY_PROCESSED]) },
     { label: 'In this handover', value: entries.length },
   ];
 }
@@ -102,9 +102,12 @@ function DeskWorkspace({ onScan }: { onScan: (code: string) => Promise<ScanResul
   // The parcel being tagged: the latest scan unless a row was picked.
   const [pickedId, setPickedId] = useState<string | null>(null);
 
+  // The latest scan of any kind gets its feedback card; only parcels truly received make the list.
   const latest = batchEntries[0];
 
-  const picked = batchEntries.find(e => e.id === pickedId);
+  const received = batchEntries.filter(e => e.result === ScanResult.MATCHED);
+
+  const picked = received.find(e => e.id === pickedId);
 
   const tagging = picked ?? latest;
 
@@ -117,8 +120,8 @@ function DeskWorkspace({ onScan }: { onScan: (code: string) => Promise<ScanResul
         <BatchBar
           kind={BatchKind.RECEIVE}
           batch={batch!}
-          count={batchEntries.length}
-          renderSheet={courierCount => <HandoverSheet batch={batch!} entries={batchEntries} courierCount={courierCount} />}
+          count={received.length}
+          renderSheet={courierCount => <HandoverSheet batch={batch!} entries={received} courierCount={courierCount} />}
           extra={
             <>
               <HandoverCounts entries={batchEntries} />
@@ -155,7 +158,7 @@ function DeskWorkspace({ onScan }: { onScan: (code: string) => Promise<ScanResul
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
-        <ScanLog entries={batchEntries} selectedId={tagging?.id ?? null} onSelect={setPickedId} onRemove={removeScan} />
+        <ScanLog entries={received} selectedId={tagging?.id ?? null} onSelect={setPickedId} onRemove={removeScan} />
       </div>
     </div>
   );
@@ -230,6 +233,8 @@ export function ReceivePage() {
       />
 
       <DeskBody onScan={onScan} />
+
+      <OperatorGate question="Who is receiving?" action="Start receiving" />
     </>
   );
 }

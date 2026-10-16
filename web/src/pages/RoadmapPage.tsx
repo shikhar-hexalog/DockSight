@@ -81,7 +81,7 @@ const BUSINESS_LINES: BusinessLine[] = [
           { label: 'Overview and board, 4 stages', to: routes.board },
           { label: 'Receive desk, offline, phone scanner', to: routes.receive },
           { label: 'Handover with condition and signed sheet', to: routes.receive },
-          { label: 'Manifest made from each handover', to: routes.manifest },
+          { label: 'Manifest made from each handover', to: routes.receive },
           { label: 'Smart product check at QC', to: routes.qc },
           { label: 'Dispatch guard for cancelled orders', to: routes.dispatch },
           { label: 'Reports by inward date', to: routes.reports },

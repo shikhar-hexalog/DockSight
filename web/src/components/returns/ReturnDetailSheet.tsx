@@ -34,6 +34,23 @@ function Section({ title, aside, children }: { title: string; aside?: ReactNode;
   );
 }
 
+/** The parcel's AWB, up top where staff look for it: the return AWB, else the forward one. */
+function HeaderAwb({ detail }: { detail: ReturnDetail }) {
+  const awb = detail.rtoTrackingNumber ?? detail.trackingNumber;
+
+  if (!awb) {
+    return null;
+  }
+
+  return (
+    <p className="flex items-center gap-2 text-[13px]">
+      <span className="text-muted-foreground">AWB</span>
+
+      <Mono className="font-medium">{awb}</Mono>
+    </p>
+  );
+}
+
 function DetailHeader({ detail }: { detail: ReturnDetail }) {
   return (
     <SheetHeader className="gap-2 px-5 pt-5 pb-4">
@@ -44,6 +61,8 @@ function DetailHeader({ detail }: { detail: ReturnDetail }) {
           <Mono className="text-[15px] font-semibold">{detail.sourceCode}</Mono>
         </SheetTitle>
       </div>
+
+      <HeaderAwb detail={detail} />
 
       <SheetDescription className="text-[13px]">{detail.firstItemName ?? 'Return'}</SheetDescription>
 

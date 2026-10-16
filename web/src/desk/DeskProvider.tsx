@@ -103,6 +103,8 @@ interface DeskContextValue {
   /** Tags (or untags) one scan's condition. Never blocks scanning. */
   tagScan: (entryId: string, tag: ConditionTag) => Promise<void>;
   submitBatch: (kind: BatchKind, submission: BatchSubmission) => Promise<void>;
+  /** Gives up the open handover: its scans are taken back and the next one starts from the courier and vehicle again. */
+  discardBatch: (kind: BatchKind) => Promise<void>;
   /** Couriers seen on expected returns, for the delivery partner picker. */
   couriers: string[];
   /** This batch's scans, newest first. */
@@ -555,6 +557,44 @@ export function DeskProvider({ children }: { children: ReactNode }) {
     [openBatches, scanner, enqueue, setOpenBatch]
   );
 
+  const discardBatch = useCallback(
+    async (kind: BatchKind) => {
+      const open = openBatches[kind];
+
+      if (!open) {
+        return;
+      }
+
+      if (kind === BatchKind.RECEIVE) {
+        const entries = log.filter(e => e.batchId === open.id);
+
+        const wasQueued = await Promise.all(entries.map(e => isScanQueued(e.id)));
+
+        for (const entry of entries) {
+          await deleteScan(entry.id);
+        }
+
+        setLog(prev => prev.filter(e => e.batchId !== open.id));
+
+        // Scans that never left this desk are simply dropped; the rest the server takes back with the handover.
+        setPendingCount(count => Math.max(0, count - wasQueued.filter(Boolean).length));
+      }
+
+      await enqueue({
+        kind: DeskOpKind.BATCH_DISCARD,
+        id: uuid(),
+        batchId: open.id,
+        discardedBy: scanner ?? open.scannedBy,
+        discardedAt: new Date().toISOString(),
+      });
+
+      await saveOpenBatch(kind, null);
+
+      setOpenBatch(kind, null);
+    },
+    [openBatches, log, scanner, enqueue, setOpenBatch]
+  );
+
   const value = useMemo<DeskContextValue>(
     () => ({
       ready,
@@ -565,6 +605,7 @@ export function DeskProvider({ children }: { children: ReactNode }) {
       removeScan,
       tagScan,
       submitBatch,
+      discardBatch,
       couriers,
       batchEntries,
       connection,
@@ -583,6 +624,7 @@ export function DeskProvider({ children }: { children: ReactNode }) {
       removeScan,
       tagScan,
       submitBatch,
+      discardBatch,
       couriers,
       batchEntries,
       connection,

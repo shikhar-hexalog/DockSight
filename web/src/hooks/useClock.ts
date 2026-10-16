@@ -51,17 +51,20 @@ export function useClock() {
   return { mode, setMode, schedule };
 }
 
-/** Formats a number of hours for the chosen clock: "5h", "2wd 3h" (working) or "2d" (all hours). */
+/**
+ * Formats a number of hours for the chosen clock: "5h", "2wd 3h" (working) or
+ * "2d" (all hours). Pass a clock for a number measured on a different one.
+ */
 export function useHoursFormatter() {
   const { mode, schedule } = useClock();
 
   return useCallback(
-    (hours: number | null) => {
+    (hours: number | null, clock: ClockMode = mode) => {
       if (hours === null) {
         return '—';
       }
 
-      if (mode === ClockMode.WORKING) {
+      if (clock === ClockMode.WORKING) {
         return formatWorkingDuration(hours * MS_PER_HOUR, workdayHours(schedule));
       }
 

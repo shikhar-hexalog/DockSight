@@ -39,6 +39,63 @@ function ArrivalSource({ summary }: { summary: ReturnSummary }) {
   );
 }
 
+function InventoryChip({ label, className }: { label: string; className: string }) {
+  return <span className={cn('rounded-[4px] border px-1.5 py-0.5 text-[10px] font-medium', className)}>{label}</span>;
+}
+
+/** Once putaway has closed in Uniware: good or bad inventory, with a count when a return has several. */
+function InventoryTags({ summary }: { summary: ReturnSummary }) {
+  const { goodItems, badItems, itemCount } = summary;
+
+  if (summary.stage !== Stage.CLOSED || (goodItems === 0 && badItems === 0)) {
+    return null;
+  }
+
+  const countLabel = (label: string, count: number) => (itemCount > 1 ? `${label} · ${count}` : label);
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <GoodChip count={goodItems} label={countLabel('Good inventory', goodItems)} />
+
+      <BadChip count={badItems} label={countLabel('Bad inventory', badItems)} />
+
+      <QcedHereChip show={summary.qcedHere} />
+    </div>
+  );
+}
+
+/** QC'd on our screen; Uniware hasn't closed putaway, so it isn't sent there yet. */
+function QcedHereChip({ show }: { show: boolean }) {
+  if (!show) {
+    return null;
+  }
+
+  return (
+    <span
+      title="QC'd here. Recorded in this app; not sent to Uniware yet."
+      className="rounded-[4px] border border-dashed px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
+    >
+      QC'd here
+    </span>
+  );
+}
+
+function GoodChip({ count, label }: { count: number; label: string }) {
+  if (count === 0) {
+    return null;
+  }
+
+  return <InventoryChip label={label} className="border-ok/30 bg-ok/10 text-ok" />;
+}
+
+function BadChip({ count, label }: { count: number; label: string }) {
+  if (count === 0) {
+    return null;
+  }
+
+  return <InventoryChip label={label} className="border-overdue/30 bg-overdue/10 text-overdue" />;
+}
+
 interface ReturnCardProps {
   summary: ReturnSummary;
   onOpen: (id: string) => void;
@@ -84,6 +141,8 @@ export function ReturnCard({ summary, onOpen }: ReturnCardProps) {
       </div>
 
       <ArrivalSource summary={summary} />
+
+      <InventoryTags summary={summary} />
     </button>
   );
 }

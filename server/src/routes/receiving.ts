@@ -21,7 +21,7 @@ import {
 
 import { UPLOADS_DIR, UPLOAD_NAME } from '../lib/uploads.ts';
 import { notifyDispatch } from '../notify/dispatchEmails.ts';
-import { batchParcels, getBatch, listBatches, setCondition, startBatch, submitBatch } from '../repo/batchesRepo.ts';
+import { batchParcels, discardBatch, getBatch, listBatches, setCondition, startBatch, submitBatch } from '../repo/batchesRepo.ts';
 import { removeHandoverCheck } from '../repo/dispatchRepo.ts';
 import { getDeskManifest, importSheet, listReceipts, recordScan, removeReceipt, resolveReceipt } from '../repo/receivingRepo.ts';
 import { findReturnIdByCode } from '../repo/returnsRepo.ts';
@@ -75,6 +75,13 @@ const opSchema = z.discriminatedUnion('kind', [
     submittedBy: z.string().trim().min(1).max(60),
     submittedAt: z.iso.datetime(),
   }),
+  z.object({
+    kind: z.literal(DeskOpKind.BATCH_DISCARD),
+    id: z.uuid(),
+    batchId: z.uuid(),
+    discardedBy: z.string().trim().min(1).max(60),
+    discardedAt: z.iso.datetime(),
+  }),
 ]);
 
 const removeOp = z.object({
@@ -96,6 +103,8 @@ function applyOp(op: DeskOp) {
     setCondition(op);
   } else if (op.kind === DeskOpKind.BATCH_SUBMIT) {
     submitBatch(op);
+  } else if (op.kind === DeskOpKind.BATCH_DISCARD) {
+    discardBatch(op);
   } else if (op.kind === DeskOpKind.SCAN_REMOVE) {
     removeReceipt(op.scanId, op.removedBy, op.removedAt);
   } else {

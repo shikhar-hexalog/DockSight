@@ -25,6 +25,7 @@ import {
 } from '@hexabuild/shared';
 
 import { Mono } from '@/components/common/Mono';
+import { ZoomableImage } from '@/components/common/ZoomableImage';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,6 +33,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useDesk } from '@/desk/DeskProvider';
 import { PhotoPicker } from '@/desk/batch/PhotoPicker';
+import { OperatorGate } from '@/desk/components/OperatorGate';
 import { ScanInput } from '@/desk/components/ScanInput';
 import { PhoneScannerButton } from '@/desk/phone/PhoneScannerButton';
 import { usePhoneLink } from '@/desk/phone/usePhoneLink';
@@ -162,7 +164,7 @@ function ReturnFacts({ target }: { target: QcReturn }) {
   );
 }
 
-function ItemImage({ url, size = 'size-14' }: { url: string | null; size?: string }) {
+function ItemImage({ url, size = 'size-14', alt = 'Item photo' }: { url: string | null; size?: string; alt?: string }) {
   if (!url) {
     return (
       <div className={cn('grid shrink-0 place-items-center rounded-md border bg-muted', size)}>
@@ -171,7 +173,7 @@ function ItemImage({ url, size = 'size-14' }: { url: string | null; size?: strin
     );
   }
 
-  return <img src={url} alt="" className={cn('shrink-0 rounded-md border object-cover', size)} />;
+  return <ZoomableImage src={url} alt={alt} className={cn('rounded-md border object-cover', size)} />;
 }
 
 // --------------------------------------------------------- step 1: the AI
@@ -181,7 +183,7 @@ function ExpectedStrip({ items }: { items: ReturnItem[] }) {
     <div className="flex flex-wrap gap-3">
       {items.map(item => (
         <div key={item.id} className="flex w-28 flex-col gap-1">
-          <ItemImage url={item.catalogImageUrl} size="size-28" />
+          <ItemImage url={item.catalogImageUrl} size="size-28" alt={item.itemName ?? 'Expected item'} />
 
           <span className="line-clamp-2 text-[11px] text-muted-foreground">{item.itemName}</span>
         </div>
@@ -290,7 +292,7 @@ function CheckingStep({ photo, target }: { photo: string; target: QcReturn }) {
 
       <div className="flex flex-wrap items-start gap-4">
         <div className="flex w-28 flex-col gap-1">
-          <ItemImage url={photo} size="size-28" />
+          <ItemImage url={photo} size="size-28" alt="What came back" />
 
           <span className="text-[11px] text-muted-foreground">What came back</span>
         </div>
@@ -320,9 +322,9 @@ function VerdictIcon({ verdict }: { verdict: MatchVerdict }) {
 function CompareRow({ match, item, photo }: { match: ItemMatch; item: ReturnItem | undefined; photo: string | null }) {
   return (
     <div className="flex items-center gap-3 rounded-lg bg-background/70 p-2">
-      <ItemImage url={item?.catalogImageUrl ?? null} size="size-16" />
+      <ItemImage url={item?.catalogImageUrl ?? null} size="size-16" alt={item?.itemName ?? 'Expected item'} />
 
-      <ItemImage url={photo} size="size-16" />
+      <ItemImage url={photo} size="size-16" alt="What came back" />
 
       <div className="min-w-0 flex-1 text-sm">
         <p>
@@ -489,7 +491,7 @@ function ItemRow({ item, value, locked, onChange }: ItemRowProps) {
   return (
     <div className={cn('flex flex-col gap-3 rounded-xl border p-3', locked && 'bg-overdue/5')}>
       <div className="flex items-center gap-3">
-        <ItemImage url={item.catalogImageUrl} />
+        <ItemImage url={item.catalogImageUrl} alt={item.itemName ?? 'Expected item'} />
 
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium">{item.itemName ?? 'Unnamed item'}</p>
@@ -939,7 +941,7 @@ export function QcPage() {
         actions={<PhoneScannerButton link={link} />}
       />
 
-      <div className="flex max-w-5xl flex-col gap-6 px-6 py-6">
+      <div className="flex flex-col gap-6 px-6 py-6">
         <QcOperator />
 
         <ScanInput disabled={pending || !scanner} onScan={code => void open(code)} />
@@ -948,6 +950,8 @@ export function QcPage() {
 
         <RecentQc />
       </div>
+
+      <OperatorGate question="Who is doing QC?" action="Start QC" />
     </>
   );
 }

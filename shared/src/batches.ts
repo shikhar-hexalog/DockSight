@@ -71,6 +71,8 @@ export const DeskOpKind = {
   SCAN_REMOVE: 'scan-remove',
   /** A dispatch scan taken back. */
   CHECK_REMOVE: 'check-remove',
+  /** A handover given up before it was signed: its scans are taken back and it never happened. */
+  BATCH_DISCARD: 'batch-discard',
 } as const;
 
 export type DeskOpKind = (typeof DeskOpKind)[keyof typeof DeskOpKind];
@@ -104,6 +106,14 @@ export interface BatchSubmitOp {
   submittedAt: string;
 }
 
+export interface BatchDiscardOp {
+  kind: typeof DeskOpKind.BATCH_DISCARD;
+  id: string;
+  batchId: string;
+  discardedBy: string;
+  discardedAt: string;
+}
+
 export interface ScanRemoveOp {
   kind: typeof DeskOpKind.SCAN_REMOVE | typeof DeskOpKind.CHECK_REMOVE;
   id: string;
@@ -113,7 +123,7 @@ export interface ScanRemoveOp {
   removedAt: string;
 }
 
-export type DeskOp = BatchStartOp | ConditionOp | BatchSubmitOp | ScanRemoveOp;
+export type DeskOp = BatchStartOp | ConditionOp | BatchSubmitOp | ScanRemoveOp | BatchDiscardOp;
 
 export interface DeskOpResult {
   id: string;

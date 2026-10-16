@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web-http",
+      "runtimeExecutable": "env",
+      "runtimeArgs": ["DEV_HTTPS=0", "WEB_PORT=5181", "npm", "run", "dev", "-w", "web"],
+      "port": 5181
+    }
+  ]
+}

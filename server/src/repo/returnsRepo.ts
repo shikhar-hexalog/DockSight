@@ -19,6 +19,7 @@ import {
   ReturnType,
   ALL_STAGES,
   ClockMode,
+  QcGrade,
   ReceivedSource,
   isLate,
   STAGE_SLA_HOURS,
@@ -52,12 +53,28 @@ const str = (value: unknown) => (value === null || value === undefined ? null : 
 /** Arrival at our dock: from a desk scan or the receiving sheet. Never Uniware's dates. */
 export const RECEIVED_AT_SQL = 'r.dock_received_at';
 
+/** The grade our QC screen gave an item, if it has been QC'd here. */
+const QC_GRADE_SQL = `(SELECT qi.grade FROM qc_items qi JOIN qc_results q ON q.id = qi.qc_id
+  WHERE q.return_id = i.return_id AND qi.sale_order_item_code = i.sale_order_item_code)`;
+
+/**
+ * An item's inventory type. Until Uniware closes putaway our own QC is the latest
+ * word; once it has, Uniware's filing is.
+ */
+const ITEM_INVENTORY_SQL = `CASE WHEN (SELECT x.inventory_received_at FROM returns x WHERE x.id = i.return_id) IS NULL
+  THEN COALESCE(${QC_GRADE_SQL}, i.inventory_type)
+  ELSE COALESCE(i.inventory_type, ${QC_GRADE_SQL}) END`;
+
 export const SUMMARY_COLUMNS = `
   r.id, r.type, r.source_code, r.source_status, r.stage, r.stage_changed_at, r.sale_order_code,
   r.courier, COALESCE(r.rto_tracking_number, r.tracking_number) AS tracking_number, r.rto_reason,
   r.source_created_at, r.delivered_at, r.dock_received_at, r.dock_received_by, r.dock_received_source,
   r.inventory_received_at, r.completed_at, r.processed_at,
   (SELECT COUNT(*) FROM return_items i WHERE i.return_id = r.id) AS item_count,
+  (SELECT COUNT(*) FROM return_items i WHERE i.return_id = r.id AND ${ITEM_INVENTORY_SQL} = '${QcGrade.GOOD}') AS good_items,
+  (SELECT COUNT(*) FROM return_items i WHERE i.return_id = r.id AND ${ITEM_INVENTORY_SQL} = '${QcGrade.BAD}') AS bad_items,
+  (r.inventory_received_at IS NULL AND EXISTS (SELECT 1 FROM qc_results q WHERE q.return_id = r.id)) AS qced_here,
+  (SELECT q.qc_at FROM qc_results q WHERE q.return_id = r.id) AS qc_at,
   (SELECT i.item_name FROM return_items i WHERE i.return_id = r.id ORDER BY i.sale_order_item_code LIMIT 1) AS first_item_name,
   (SELECT i.return_reason FROM return_items i WHERE i.return_id = r.id ORDER BY i.sale_order_item_code LIMIT 1) AS first_reason
 `;
@@ -83,6 +100,10 @@ export function toSummary(row: Row): ReturnSummary {
     trackingNumber: str(row.tracking_number),
     rtoReason: str(row.rto_reason),
     itemCount: Number(row.item_count),
+    goodItems: Number(row.good_items),
+    badItems: Number(row.bad_items),
+    qcedHere: Boolean(row.qced_here),
+    qcAt: str(row.qc_at),
     firstItemName: str(row.first_item_name),
     firstReason: str(row.first_reason),
     sourceCreatedAt: str(row.source_created_at),
@@ -413,7 +434,11 @@ export function getReturnDetail(id: string): ReturnDetail | null {
     return null;
   }
 
-  const items = db.prepare('SELECT * FROM return_items WHERE return_id = ? ORDER BY sale_order_item_code').all(id);
+  const items = db
+    .prepare(
+      `SELECT i.*, ${ITEM_INVENTORY_SQL} AS effective_inventory_type FROM return_items i WHERE i.return_id = ? ORDER BY i.sale_order_item_code`
+    )
+    .all(id);
 
   const events = db.prepare('SELECT * FROM events WHERE return_id = ? ORDER BY occurred_at DESC').all(id);
 
@@ -428,7 +453,7 @@ export function getReturnDetail(id: string): ReturnDetail | null {
     putawayCode: str(row.putaway_code),
     firstSyncedAt: String(row.first_synced_at),
     lastSyncedAt: String(row.last_synced_at),
-    items: items.map(toItem),
+    items: items.map(item => toItem({ ...item, inventory_type: item.effective_inventory_type })),
     events: events.map(toEvent),
     dockArrival: dockArrival(id),
   };

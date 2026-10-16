@@ -54,6 +54,8 @@ import type {
   QcRecord,
   QcSubmit,
   QcCheckResponse,
+  SheetCheckRequest,
+  SheetCheckResponse,
 } from '@hexabuild/shared';
 
 export class ApiRequestError extends Error {
@@ -229,6 +231,12 @@ export const api = {
     request<AskAnswer>('/ask', {
       method: 'POST',
       body: JSON.stringify({ question }),
+    }),
+
+  checkSheet: (body: SheetCheckRequest) =>
+    request<SheetCheckResponse>('/desk/sheet-check', {
+      method: 'POST',
+      body: JSON.stringify(body),
     }),
 
   readLabel: (mimeType: string, imageBase64: string) =>

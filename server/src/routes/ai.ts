@@ -5,6 +5,7 @@ import { type AiStatusResponse, BriefKind, BriefTrigger, type BriefsResponse } f
 
 import { briefSchedule } from '../ai/briefScheduler.ts';
 import { readLabel } from '../ai/labelReader.ts';
+import { checkSignedSheet } from '../ai/sheetCheck.ts';
 import { ai } from '../ai/provider.ts';
 import { askData, generateBrief, listBriefs } from '../ai/reporting.ts';
 import { AiError } from '../ai/types.ts';
@@ -26,6 +27,15 @@ const ACCEPTED_IMAGES = ['image/jpeg', 'image/png', 'image/webp'] as const;
 
 // About 7 MB once decoded: plenty for a label photo.
 const MAX_IMAGE_BASE64 = 10_000_000;
+
+// A phone photo or a scanned PDF of the signed sheet, as a data URL.
+const SHEET_DATA_URL = /^data:(image\/(?:jpeg|png|webp)|application\/pdf);base64,(.+)$/;
+
+const sheetBody = z.object({
+  sheet: z.string().max(14_000_000).regex(SHEET_DATA_URL, 'Must be a JPEG, PNG, WebP or PDF data URL'),
+  parcels: z.number().int().min(0).max(100_000),
+  courier: z.string().trim().min(1).max(60),
+});
 
 const labelBody = z.object({
   mimeType: z.enum(ACCEPTED_IMAGES),
@@ -81,6 +91,18 @@ export function aiRouter(guard: DispatchGuard) {
       res.json(await readLabel(Buffer.from(imageBase64, 'base64'), mimeType));
     } catch (err) {
       res.status(502).json({ error: err instanceof AiError ? err.message : 'Could not read the label' });
+    }
+  });
+
+  router.post('/desk/sheet-check', async (req, res) => {
+    const { sheet, parcels, courier } = sheetBody.parse(req.body);
+
+    const [, mimeType, base64] = SHEET_DATA_URL.exec(sheet)!;
+
+    try {
+      res.json(await checkSignedSheet(Buffer.from(base64, 'base64'), mimeType, parcels, courier));
+    } catch (err) {
+      res.status(502).json({ error: err instanceof AiError ? err.message : 'Could not check the sheet' });
     }
   });
 

@@ -16,8 +16,9 @@ import {
   type QcMatchCheck,
   type ReturnManifest,
   ScanResult,
-  type Stage,
+  Stage,
   type UniwareQcPayload,
+  laterStage,
   normalizeCode,
   parcelShelf,
   shelfFor,
@@ -227,6 +228,23 @@ export function expectedItemsFor(returnId: string): { code: string; name: string
     .map(row => ({ code: String(row.sale_order_item_code), name: str(row.item_name) ?? 'unnamed item', imageUrl: str(row.catalog_image_url) }));
 }
 
+/**
+ * A QC'd return shows as Closed (putaway) on the board, though nothing is sent
+ * to Uniware: the board shows the whole journey. Uniware's own close later finds
+ * it already there. A cancelled return keeps its stage so the cancellation stays visible.
+ */
+function advanceToClosed(returnId: string, actor: string, at: string) {
+  const from = db.prepare('SELECT stage FROM returns WHERE id = ?').get(returnId)?.stage as Stage | undefined;
+
+  if (!from || from === Stage.CANCELLED || laterStage(from, Stage.CLOSED) === from) {
+    return;
+  }
+
+  db.prepare('UPDATE returns SET stage = ?, stage_changed_at = ? WHERE id = ?').run(Stage.CLOSED, at, returnId);
+
+  insertEvent({ returnId, type: EventType.STAGE_CHANGED, actor, payload: { from, to: Stage.CLOSED }, occurredAt: at });
+}
+
 export function submitQc(input: QcSubmit): QcRecord {
   return transaction(() => {
     const target = qcReturn(input.returnId);
@@ -301,6 +319,8 @@ export function submitQc(input: QcSubmit): QcRecord {
       payload: { shelfCode, grades: input.items.map(item => item.grade) },
       occurredAt: qcAt,
     });
+
+    advanceToClosed(input.returnId, input.qcBy, qcAt);
 
     return qcOf(input.returnId)!;
   });

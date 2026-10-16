@@ -1,7 +1,17 @@
 import { ArrowRight } from 'lucide-react';
+import { Fragment } from 'react';
 import { Link } from 'react-router';
 
-import { BATCH_UNSIGNED_WARN_HOURS, BRIEF_KIND_LABEL, MovementKind, type OverviewResponse, STAGE_LABEL, Stage } from '@hexabuild/shared';
+import {
+  BATCH_UNSIGNED_WARN_HOURS,
+  BRIEF_KIND_LABEL,
+  FLOW_WINDOW_DAYS,
+  type FlowStep,
+  MovementKind,
+  type OverviewResponse,
+  STAGE_LABEL,
+  Stage,
+} from '@hexabuild/shared';
 
 import { QueryError } from '@/components/common/QueryError';
 import { InfoTip } from '@/components/common/InfoTip';
@@ -199,6 +209,63 @@ function PendingByCourier({ overview }: { overview: OverviewResponse }) {
   );
 }
 
+// The moment a return reaches each stage, as a point on its journey.
+const FLOW_POINT_LABEL: Record<Stage, string> = {
+  [Stage.EXPECTED]: 'Expected',
+  [Stage.RECEIVED]: 'Arrived at dock',
+  [Stage.MANIFESTED]: 'Manifested',
+  [Stage.CLOSED]: 'Putaway closed',
+  [Stage.CANCELLED]: STAGE_LABEL[Stage.CANCELLED],
+};
+
+function FlowPoint({ stage }: { stage: Stage }) {
+  return <span className="rounded-full border bg-background px-3 py-1 text-[13px] font-medium whitespace-nowrap">{FLOW_POINT_LABEL[stage]}</span>;
+}
+
+/** The median time of one step, with how many returns it is taken from. */
+function FlowGap({ step }: { step: FlowStep }) {
+  const hoursLabel = useHoursFormatter();
+
+  const hasData = step.count > 0;
+
+  const value = hasData ? hoursLabel(step.medianHours, step.clock) : '—';
+
+  const note = hasData ? `median of ${formatCount(step.count)}` : 'none in the window';
+
+  return (
+    <div className="flex min-w-24 flex-1 flex-col items-center gap-0.5">
+      <span className={cn('text-xl font-semibold tracking-tight tabular-nums', !hasData && 'text-muted-foreground/50')}>{value}</span>
+
+      <div className="flex w-full items-center text-muted-foreground/60">
+        <div className="h-px flex-1 bg-border" />
+
+        <ArrowRight className="size-3.5" />
+      </div>
+
+      <span className="text-[11px] text-muted-foreground">{note}</span>
+    </div>
+  );
+}
+
+/** Expected -> arrived -> manifested -> putaway, with the typical time of each step between. */
+function StageFlow({ overview }: { overview: OverviewResponse }) {
+  return (
+    <Panel title={`Time between stages, last ${FLOW_WINDOW_DAYS} days`} info={EXPLAIN.flow}>
+      <div className="flex items-center gap-x-3 overflow-x-auto pb-1">
+        <FlowPoint stage={Stage.EXPECTED} />
+
+        {overview.flow.map(step => (
+          <Fragment key={step.to}>
+            <FlowGap step={step} />
+
+            <FlowPoint stage={step.to} />
+          </Fragment>
+        ))}
+      </div>
+    </Panel>
+  );
+}
+
 /** The newest AI brief's headline, so the overview opens with "what matters right now". */
 function LatestBrief() {
   const { data } = useBriefs();
@@ -286,6 +353,10 @@ function OverviewBody() {
       <NeedsAttention overview={data} />
 
       <div className="grid gap-4 p-6 lg:grid-cols-2">
+        <div className="lg:col-span-2">
+          <StageFlow overview={data} />
+        </div>
+
         <PendingAges overview={data} />
 
         <PendingByCourier overview={data} />

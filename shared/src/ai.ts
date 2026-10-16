@@ -107,3 +107,53 @@ export interface LabelReadResponse {
   provider: string;
   note: string | null;
 }
+
+/** What the AI made of one signature box on the handover sheet. */
+export const SignatureState = {
+  SIGNED: 'SIGNED',
+  MISSING: 'MISSING',
+  /** Cut off, blurred, or the AI can't tell. */
+  UNSURE: 'UNSURE',
+} as const;
+
+export type SignatureState = (typeof SignatureState)[keyof typeof SignatureState];
+
+/** The outcome of checking a photo of the signed handover sheet. */
+export const SheetVerdict = {
+  /** Both boxes signed: the handover can be submitted. */
+  APPROVED: 'APPROVED',
+  /** A box is clearly unsigned: get the signature and retake the photo. */
+  MISSING_SIGNATURE: 'MISSING_SIGNATURE',
+  /** The photo isn't a handover sheet. */
+  NOT_A_SHEET: 'NOT_A_SHEET',
+  /** The AI couldn't tell; a person decides. */
+  UNSURE: 'UNSURE',
+} as const;
+
+export type SheetVerdict = (typeof SheetVerdict)[keyof typeof SheetVerdict];
+
+export interface SheetCheckRequest {
+  /** The photo (JPEG, PNG, WebP) or scanned PDF, as a data URL. */
+  sheet: string;
+  /** Parcels on this handover, to compare with the count printed on the sheet. */
+  parcels: number;
+  courier: string;
+}
+
+export interface SheetCheck {
+  verdict: SheetVerdict;
+  warehouseSignature: SignatureState;
+  riderSignature: SignatureState;
+  /** The parcel count printed or written on the sheet, if readable. */
+  countOnSheet: number | null;
+  /** One short sentence for the warehouse worker. */
+  note: string;
+  seconds: number;
+}
+
+export interface SheetCheckResponse {
+  /** null when smart features are off or in mock mode: the person decides. */
+  check: SheetCheck | null;
+  provider: string;
+  note: string | null;
+}

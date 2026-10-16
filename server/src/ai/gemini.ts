@@ -51,6 +51,7 @@ const MIME_FOR: Record<string, string> = {
   jpeg: 'image/jpeg',
   png: 'image/png',
   webp: 'image/webp',
+  pdf: 'application/pdf',
 };
 
 interface GeminiResponse {

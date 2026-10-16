@@ -18,6 +18,13 @@ export interface ReturnSummary {
   trackingNumber: string | null;
   rtoReason: string | null;
   itemCount: number;
+  /** Items Uniware's putaway filed as good or bad inventory; the rest aren't QC'd or aren't stored yet. */
+  goodItems: number;
+  badItems: number;
+  /** QC'd on our QC screen but Uniware hasn't closed its putaway yet (the QC is recorded here, not sent). */
+  qcedHere: boolean;
+  /** When our QC screen saved its result (processed and put away here; Uniware isn't updated). */
+  qcAt: string | null;
   firstItemName: string | null;
   firstReason: string | null;
   sourceCreatedAt: string | null;
@@ -165,6 +172,21 @@ export interface CourierPending {
 }
 
 /** The day so far, and everything still waiting on Uniware. */
+/** How many days of finished transitions the overview's stage flow looks back over. */
+export const FLOW_WINDOW_DAYS = 7;
+
+/** One step of a return's journey: the typical time from one stage to the next. */
+export interface FlowStep {
+  from: Stage;
+  to: Stage;
+  /** Median over returns that completed this step in the last FLOW_WINDOW_DAYS days. */
+  medianHours: number | null;
+  /** Time with the courier runs on all hours; time inside the warehouse follows the chosen clock. */
+  clock: ClockMode;
+  /** How many returns the median is taken from. */
+  count: number;
+}
+
 export interface OverviewResponse {
   /** Which clock the ages and TAT below are measured on. */
   clock: ClockMode;
@@ -189,6 +211,8 @@ export interface OverviewResponse {
   exceptionsOpen: number;
   /** Received-to-processed time for returns processed today. */
   tatTodayMedianHours: number | null;
+  /** Expected -> arrived -> manifested -> putaway closed: the median time of each step. */
+  flow: FlowStep[];
   dispatch: DispatchSummary;
   /** Receiving batches still waiting for their signed sheet. */
   batches: { open: number; unsignedOverdue: number; receiveOverdue: number; dispatchOverdue: number };

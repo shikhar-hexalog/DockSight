@@ -3,6 +3,7 @@
 import {
   BatchKind,
   type BatchParcel,
+  type BatchDiscardOp,
   type BatchStart,
   BatchStatus,
   type BatchSubmitOp,
@@ -16,6 +17,7 @@ import {
 import { db, transaction } from '../db/index.ts';
 import { nowIso } from '../lib/time.ts';
 import { saveImage, uploadUrl } from '../lib/uploads.ts';
+import { removeReceipt } from './receivingRepo.ts';
 import { createManifestFromBatch } from './workflowRepo.ts';
 
 type Row = Record<string, unknown>;
@@ -104,6 +106,27 @@ export function startBatch(start: BatchStart) {
     `INSERT OR IGNORE INTO receiving_batches (id, kind, courier, vehicle_no, scanned_by, started_at, status, recorded_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(start.id, start.batchKind, start.courier, start.vehicleNo, start.scannedBy, start.startedAt, BatchStatus.OPEN, nowIso());
+}
+
+/**
+ * Gives up an unsigned handover: its scans are taken back (parcels go back to
+ * where they were) and the handover is forgotten. A signed one can't be undone.
+ * Safe to repeat: each removal is its own step, and a missing batch is nothing to do.
+ */
+export function discardBatch(op: BatchDiscardOp) {
+  const batch = db.prepare('SELECT status FROM receiving_batches WHERE id = ?').get(op.batchId);
+
+  if (!batch || batch.status !== BatchStatus.OPEN) {
+    return;
+  }
+
+  for (const receipt of db.prepare('SELECT id FROM receipts WHERE batch_id = ?').all(op.batchId)) {
+    removeReceipt(String(receipt.id), op.discardedBy, op.discardedAt);
+  }
+
+  db.prepare('DELETE FROM handover_checks WHERE batch_id = ?').run(op.batchId);
+
+  db.prepare('DELETE FROM receiving_batches WHERE id = ? AND status = ?').run(op.batchId, BatchStatus.OPEN);
 }
 
 /** Tags (or untags) one scan. The latest edit wins; a resend of an older one is ignored. */

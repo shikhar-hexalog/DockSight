@@ -129,6 +129,11 @@ export async function completeScans(entries: DeskScanEntry[]) {
     // A tag added while the scan was on its way is newer than the server's answer.
     const stored = await tx.objectStore('log').get(entry.id);
 
+    // Taken back while it was on its way: don't bring it back.
+    if (!stored) {
+      continue;
+    }
+
     const tag = stored ? { condition: stored.condition, conditionNote: stored.conditionNote, hasPhoto: stored.hasPhoto } : {};
 
     await tx.objectStore('log').put({ ...entry, ...tag });
