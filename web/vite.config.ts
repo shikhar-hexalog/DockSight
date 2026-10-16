@@ -24,7 +24,8 @@ export default defineConfig(({ mode }) => {
       // Reachable from phones on the same Wi-Fi.
       host: true,
       proxy: {
-        '/api': 'http://localhost:4000',
+        // API_URL points the app at another server (e.g. a test copy); default: this machine's.
+        '/api': env.API_URL ?? 'http://localhost:4000',
       },
     },
   };

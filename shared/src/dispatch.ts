@@ -50,9 +50,11 @@ export interface DispatchHold {
   missedAt: string | null;
 }
 
-/** The customer emails sent for one submitted dispatch handover. */
+/** The customer emails sent for one submitted handover (dispatch or returns). */
 export interface DispatchNotice {
   batchId: string;
+  /** DISPATCH: "your order has been dispatched"; RECEIVE: "we've received your return". */
+  kind: 'DISPATCH' | 'RECEIVE';
   courier: string;
   /** Where the emails went (the demo inbox). */
   recipient: string | null;
@@ -65,7 +67,7 @@ export interface DispatchNotice {
 
 export interface DispatchNoticesResponse {
   data: DispatchNotice[];
-  /** Where the sent emails can be seen (Mailpit in the demo). */
+  /** Where the sent emails can be seen (the sender's Sent Items in Outlook). */
   inboxUrl: string;
 }
 

@@ -102,6 +102,8 @@ Orders cancelled after their parcel was manifested, before the courier picked it
 
 Smart checks use every AI engine with a key in `.env`, in turn: Groq (`GROQ_KEY`, free), Gemini (`GEMINI_API_KEY`, free), Meta (`META_KEY`, paid, from dev.meta.ai), then OpenAI (`OPENAI_KEY`, optional). Models are picked automatically from each engine's model list and refreshed every few hours; a busy, used-up or retired model is skipped and the next one tried, across engines. `AI_ENGINES` sets the order and `GEMINI_MODELS` / `META_MODELS` / `OPENAI_MODELS` pin models. `AI_PROVIDER=claude-cli` runs it through the Claude Code CLI instead; `AI_PROVIDER=mock` runs without AI.
 
+Dispatch emails are sent through Microsoft Graph: set `GRAPH_TENANT_ID`, `GRAPH_CLIENT_ID` and `GRAPH_CLIENT_SECRET` (an Entra app with the Mail.Send application permission; `MAIL_FROM` must be a real mailbox). Without them no email is sent. For the demo every email goes to `MAIL_DEMO_TO`.
+
 - **Briefs & questions** (`/ai`): a daily brief and shift handover notes, written at `BRIEF_DAILY_AT` / `BRIEF_HANDOVER_AT` and optionally posted to `BRIEF_WEBHOOK_URL`; and questions answered in plain words. The AI sees only a compact snapshot of the app's own data (`server/src/ai/snapshot.ts`), never customer details.
 - **Damaged-label fallback** (Receive page): a webcam photo or upload of the label; the AI lists the codes it can read, and each is checked against expected returns before anyone uses it. The webcam needs the page opened on the same computer (localhost).
 - Calls run one at a time and take roughly 20–60 seconds.

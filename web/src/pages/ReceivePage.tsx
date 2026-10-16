@@ -20,6 +20,7 @@ import { PhoneScannerButton } from '@/desk/phone/PhoneScannerButton';
 import { SheetImportButton } from '@/desk/sheet/SheetImportDialog';
 import { type PhoneLink, usePhoneLink } from '@/desk/phone/usePhoneLink';
 import { SCAN_SOUND, playSound } from '@/desk/sounds';
+import { useNotifiedToast } from '@/desk/useNotifiedToast';
 import { type ExportFile, ExportMenu } from '@/components/common/ExportMenu';
 import { exportUrls } from '@/lib/api';
 import { formatCount, formatRelative } from '@/lib/format';
@@ -207,6 +208,8 @@ function PhoneButton({ link }: { link: PhoneLink }) {
 
 export function ReceivePage() {
   const onScan = useReceiveScan();
+
+  useNotifiedToast('RECEIVE');
 
   const link = usePhoneLink(RemoteTarget.RECEIVE, ({ id, code }) => {
     void onScan(code).then(result => {

@@ -2,7 +2,7 @@ import { CircleCheck, CloudOff, OctagonX, RefreshCw, Repeat, ShieldAlert, Trash2
 import { useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
-import { BatchKind, DeskOpKind, type DispatchHold, type DispatchNotice, HandoverResult, HoldStatus, PulledVia, RemoteTarget } from '@hexabuild/shared';
+import { BatchKind, DeskOpKind, type DispatchHold, HandoverResult, HoldStatus, PulledVia, RemoteTarget } from '@hexabuild/shared';
 
 import { type ExportFile, ExportMenu } from '@/components/common/ExportMenu';
 import { InfoTip } from '@/components/common/InfoTip';
@@ -20,9 +20,10 @@ import { ScanInput } from '@/desk/components/ScanInput';
 import { PhoneScannerButton } from '@/desk/phone/PhoneScannerButton';
 import { type PhoneLink, usePhoneLink } from '@/desk/phone/usePhoneLink';
 import { type HandoverEntry, useHandoverCheck } from '@/desk/useHandoverCheck';
+import { useNotifiedToast } from '@/desk/useNotifiedToast';
 import { uuid } from '@/desk/uuid';
 import { useDemoMode } from '@/hooks/useDemoMode';
-import { useClearDemoCancellations, useDemoCancellation, useDispatchNotices, useOverview, usePullHold, useRunGuard } from '@/hooks/queries';
+import { useClearDemoCancellations, useDemoCancellation, useOverview, usePullHold, useRunGuard } from '@/hooks/queries';
 import { exportUrls } from '@/lib/api';
 import { formatAge, formatCount, formatDateTime, formatRelative } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -605,53 +606,6 @@ function usePhoneResults(handover: Handover, link: PhoneLink) {
   };
 }
 
-const NOTICE_TOAST_MS = 5_000;
-
-/** A notice changes when more of its emails go out (late scans, a retry that worked). */
-const noticeKey = (notice: DispatchNotice) => `${notice.batchId}:${notice.sent}:${notice.failed}`;
-
-/** A toast when a submitted handover's customer emails go out. What was already there when the page opened is not shown again. */
-function useNotifiedToast() {
-  const { data } = useDispatchNotices();
-
-  const seen = useRef<Set<string> | null>(null);
-
-  useEffect(() => {
-    if (!data) {
-      return;
-    }
-
-    if (!seen.current) {
-      seen.current = new Set(data.data.map(noticeKey));
-      return;
-    }
-
-    for (const notice of data.data) {
-      if (seen.current.has(noticeKey(notice))) {
-        continue;
-      }
-
-      seen.current.add(noticeKey(notice));
-
-      if (notice.sent === 0) {
-        toast.error('Clients not notified', {
-          description: `${notice.courier} pickup${notice.error ? `: ${notice.error}` : ''}.`,
-          duration: NOTICE_TOAST_MS,
-        });
-        continue;
-      }
-
-      const emails = `${formatCount(notice.sent)} dispatch ${notice.sent === 1 ? 'email' : 'emails'}`;
-
-      toast.success('Clients notified', {
-        description: `${emails} sent for the ${notice.courier} pickup${notice.recipient ? ` to ${notice.recipient}` : ''}${notice.failed > 0 ? `; ${formatCount(notice.failed)} failed` : ''}.`,
-        duration: NOTICE_TOAST_MS,
-        action: { label: 'View emails', onClick: () => window.open(data.inboxUrl, '_blank', 'noreferrer') },
-      });
-    }
-  }, [data]);
-}
-
 function PhoneButton({ link }: { link: PhoneLink }) {
   const { dispatchBatch } = useDesk();
 
@@ -686,7 +640,7 @@ export function DispatchPage() {
 
   checkFromPhone.current = usePhoneResults(handover, link);
 
-  useNotifiedToast();
+  useNotifiedToast('DISPATCH');
 
   return (
     <>

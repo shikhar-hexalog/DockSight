@@ -162,6 +162,13 @@ const dbPath = env('DB_PATH') ?? `${ROOT_DIR}data/hexabuild.db`;
 
 mkdirSync(dirname(dbPath), { recursive: true });
 
+// Microsoft Graph app registration for sending email: GRAPH_* or MS_*.
+const graphTenantId = env('GRAPH_TENANT_ID') ?? env('MS_TENANT_ID');
+
+const graphClientId = env('GRAPH_CLIENT_ID') ?? env('MS_CLIENT_ID');
+
+const graphClientSecret = env('GRAPH_CLIENT_SECRET') ?? env('MS_CLIENT_SECRET');
+
 export const config = {
   port: Number(env('PORT') ?? 4000),
   workSchedule: resolveWorkSchedule(),
@@ -177,16 +184,19 @@ export const config = {
     errorBackoffMs: 10_000,
     maxConcurrency: Number(env('UNICOMMERCE_MAX_CONCURRENCY') ?? 5),
   },
-  // Dispatch emails. Defaults point at Mailpit on this machine (SMTP 1025, inbox 8025).
+  // Dispatch emails, sent through Microsoft Graph (GRAPH_* or MS_*).
   mail: {
-    host: env('SMTP_HOST') ?? 'localhost',
-    port: Number(env('SMTP_PORT') ?? 1025),
-    user: env('SMTP_USER'),
-    pass: env('SMTP_PASS'),
+    graph: {
+      enabled: Boolean(graphTenantId && graphClientId && graphClientSecret),
+      tenantId: graphTenantId,
+      clientId: graphClientId,
+      clientSecret: graphClientSecret,
+    },
     from: env('MAIL_FROM') ?? 'warehouse@hexalog.in',
     // Demo: every customer email goes to this one address. Unset, none are sent.
     demoTo: env('MAIL_DEMO_TO'),
-    inboxUrl: env('MAIL_INBOX_URL') ?? 'http://localhost:8025',
+    // Where "View emails" goes: the sender's Sent Items in Outlook.
+    inboxUrl: env('MAIL_INBOX_URL') ?? 'https://outlook.office.com/mail/sentitems',
   },
   guard: {
     // Cancellations are checked often: a parcel can be handed over within minutes.
