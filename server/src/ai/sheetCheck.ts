@@ -89,7 +89,7 @@ Check both signature boxes and read the parcel count.`,
       provider: ai.name,
       note:
         ai.name === AiProviderName.MOCK
-          ? 'The smart check is in mock mode, so the sheet was not read. Set GEMINI_API_KEY in .env to enable it.'
+          ? 'The smart check is in mock mode, so the sheet was not read. Set OPENAI_KEY in .env to enable it.'
           : null,
     };
   }

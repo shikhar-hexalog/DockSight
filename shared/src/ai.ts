@@ -4,6 +4,8 @@ import type { ReturnType, Stage } from './constants.ts';
 
 /** Which engine writes AI answers. */
 export const AiProviderName = {
+  /** The OpenAI API, with OPENAI_KEY from .env. */
+  OPENAI: 'openai',
   /** The Gemini API, with GEMINI_API_KEY from .env. */
   GEMINI: 'gemini',
   /** `claude -p` on the server machine, using the logged-in Claude subscription. */

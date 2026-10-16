@@ -100,7 +100,7 @@ Orders cancelled after their parcel was manifested, before the courier picked it
 
 ## AI
 
-AI runs on the Gemini API: set `GEMINI_API_KEY` in `.env` (and optionally `GEMINI_MODEL`, default `gemini-3.5-flash`, and `GEMINI_BACKUP_MODELS`, tried in order when it is busy). `AI_PROVIDER=claude-cli` still runs it through the Claude Code CLI instead; `AI_PROVIDER=mock` runs without AI.
+AI runs on the OpenAI API: set `OPENAI_KEY` in `.env` (and optionally `OPENAI_MODEL`, default `gpt-5.5`, and `OPENAI_BACKUP_MODELS`, tried in order when it is busy). Without an OpenAI key it uses Gemini (`GEMINI_API_KEY`, `GEMINI_MODEL`, `GEMINI_BACKUP_MODELS`). `AI_PROVIDER=claude-cli` still runs it through the Claude Code CLI instead; `AI_PROVIDER=mock` runs without AI.
 
 - **Briefs & questions** (`/ai`): a daily brief and shift handover notes, written at `BRIEF_DAILY_AT` / `BRIEF_HANDOVER_AT` and optionally posted to `BRIEF_WEBHOOK_URL`; and questions answered in plain words. The AI sees only a compact snapshot of the app's own data (`server/src/ai/snapshot.ts`), never customer details.
 - **Damaged-label fallback** (Receive page): a webcam photo or upload of the label; the AI lists the codes it can read, and each is checked against expected returns before anyone uses it. The webcam needs the page opened on the same computer (localhost).

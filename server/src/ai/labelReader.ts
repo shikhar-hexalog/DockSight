@@ -91,6 +91,6 @@ export async function readLabel(image: Buffer, mimeType: string): Promise<LabelR
     candidates,
     courier: reading.courier,
     provider: ai.name,
-    note: ai.name === AiProviderName.MOCK ? 'Smart label reading is in mock mode, so the label was not read. Set GEMINI_API_KEY in .env to enable it.' : null,
+    note: ai.name === AiProviderName.MOCK ? 'Smart label reading is in mock mode, so the label was not read. Set OPENAI_KEY in .env to enable it.' : null,
   };
 }

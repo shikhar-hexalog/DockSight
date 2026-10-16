@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 
 import { claudeCliProvider } from './claudeCli.ts';
 import { geminiKey, geminiProvider } from './gemini.ts';
+import { openAiKey, openAiProvider } from './openai.ts';
 import { AiError, type AiProvider, AiProviderName, type AiRequest } from './types.ts';
 
 const mockProvider: AiProvider = {
@@ -30,9 +31,9 @@ function claudeInstalled(): boolean {
 }
 
 /**
- * AI_PROVIDER picks the engine: gemini, claude-cli, mock or off. Unset, it uses
- * Gemini when GEMINI_API_KEY is set, then the Claude CLI when installed, and
- * falls back to mock answers otherwise.
+ * AI_PROVIDER picks the engine: openai, gemini, claude-cli, mock or off. Unset,
+ * it uses OpenAI when OPENAI_KEY is set, then Gemini when GEMINI_API_KEY is
+ * set, then the Claude CLI when installed, and mock answers otherwise.
  */
 function pickProvider(): AiProvider {
   const requested = process.env.AI_PROVIDER?.trim();
@@ -45,6 +46,14 @@ function pickProvider(): AiProvider {
     return offProvider;
   }
 
+  if (requested === AiProviderName.OPENAI) {
+    if (!openAiKey()) {
+      throw new Error('AI_PROVIDER=openai but OPENAI_KEY is not set');
+    }
+
+    return openAiProvider;
+  }
+
   if (requested === AiProviderName.GEMINI) {
     if (!geminiKey()) {
       throw new Error('AI_PROVIDER=gemini but GEMINI_API_KEY is not set');
@@ -55,6 +64,10 @@ function pickProvider(): AiProvider {
 
   if (requested === AiProviderName.CLAUDE_CLI) {
     return claudeCliProvider;
+  }
+
+  if (openAiKey()) {
+    return openAiProvider;
   }
 
   if (geminiKey()) {

@@ -130,7 +130,7 @@ function mockBrief(kind: BriefKind, s: Snapshot): BriefContent {
 
 function mockAnswer(question: string, s: Snapshot): Omit<AskAnswer, 'provider'> {
   return {
-    answer: `Mock mode: smart answers need GEMINI_API_KEY in .env. "${question}" was not analysed. ${s.today.pendingNow.total} returns are pending right now.`,
+    answer: `Mock mode: smart answers need OPENAI_KEY in .env. "${question}" was not analysed. ${s.today.pendingNow.total} returns are pending right now.`,
     table: {
       columns: ['AWB', 'Return', 'Courier', 'Working hours pending'],
       rows: s.pendingReturns.slice(0, 5).map(r => [r.awb ?? '—', r.returnCode, r.courier ?? '—', String(r.workingHoursPending ?? '—')]),
