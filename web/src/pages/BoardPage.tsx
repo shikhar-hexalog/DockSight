@@ -23,7 +23,7 @@ export function BoardPage() {
     <>
       <PageHeader
         title="Board"
-        description="Every return as a card, by stage. Longest waiting first; a red edge means it's past its time limit. Click a card for its details."
+        description="Every return as a row, by stage, longest waiting first. Rows past their time limit sit at the top, under “N late” in red. Click a row for its details."
       />
 
       <FilterBar

@@ -180,8 +180,9 @@ function Bar({ label, value, max, late, trailing }: { label: string; value: numb
   );
 }
 
-// The last bucket is past the time limit.
-const LATE_BUCKET = 3;
+// The first two buckets end at the 24h (or one working day) limit for a
+// received return; everything from "1–2 days" on is late.
+const FIRST_LATE_BUCKET = 2;
 
 function PendingAges({ overview }: { overview: OverviewResponse }) {
   const max = Math.max(...overview.pendingAges.map(bucket => bucket.count));
@@ -202,7 +203,7 @@ function PendingAges({ overview }: { overview: OverviewResponse }) {
           label={bucket.label}
           value={bucket.count}
           max={max}
-          late={index === LATE_BUCKET && bucket.count > 0}
+          late={index >= FIRST_LATE_BUCKET && bucket.count > 0}
           trailing={formatCount(bucket.count)}
         />
       ))}

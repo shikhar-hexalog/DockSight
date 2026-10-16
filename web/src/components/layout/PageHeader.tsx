@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 
+import { SyncIndicator } from './SyncIndicator';
+
 interface PageHeaderProps {
   title: string;
   description?: string;
@@ -13,6 +15,11 @@ export function PageHeader({ title, description, actions }: PageHeaderProps) {
         <h1 className="font-display text-[28px] leading-none font-semibold tracking-[-0.035em] text-ink">{title}</h1>
 
         {description && <p className="mt-2 text-[13px] text-muted-foreground">{description}</p>}
+
+        {/* The sidebar, which normally shows sync status, is hidden on narrow screens. */}
+        <div className="mt-1.5 md:hidden">
+          <SyncIndicator placement="page" />
+        </div>
       </div>
 
       <div className="flex items-center gap-4">{actions}</div>
