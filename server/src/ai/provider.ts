@@ -1,8 +1,7 @@
 import { execFileSync } from 'node:child_process';
 
 import { claudeCliProvider } from './claudeCli.ts';
-import { geminiKey, geminiProvider } from './gemini.ts';
-import { openAiKey, openAiProvider } from './openai.ts';
+import { availableEngines, routerProvider } from './router.ts';
 import { AiError, type AiProvider, AiProviderName, type AiRequest } from './types.ts';
 
 const mockProvider: AiProvider = {
@@ -30,13 +29,16 @@ function claudeInstalled(): boolean {
   }
 }
 
+const KEY_FOR = { groq: 'GROQ_KEY', gemini: 'GEMINI_API_KEY', meta: 'META_KEY', openai: 'OPENAI_KEY' } as const;
+
 /**
- * AI_PROVIDER picks the engine: openai, gemini, claude-cli, mock or off. Unset,
- * it uses OpenAI when OPENAI_KEY is set, then Gemini when GEMINI_API_KEY is
- * set, then the Claude CLI when installed, and mock answers otherwise.
+ * AI_PROVIDER picks the engine. Unset (or auto), every engine with a key in
+ * .env is used in turn (Groq, Gemini, Meta, OpenAI; see router.ts), then the
+ * Claude CLI when installed, then mock answers. groq | gemini | meta | openai uses only that
+ * one; claude-cli, mock and off do what they say.
  */
 function pickProvider(): AiProvider {
-  const requested = process.env.AI_PROVIDER?.trim();
+  const requested = process.env.AI_PROVIDER?.trim() || AiProviderName.AUTO;
 
   if (requested === AiProviderName.MOCK) {
     return mockProvider;
@@ -46,32 +48,20 @@ function pickProvider(): AiProvider {
     return offProvider;
   }
 
-  if (requested === AiProviderName.OPENAI) {
-    if (!openAiKey()) {
-      throw new Error('AI_PROVIDER=openai but OPENAI_KEY is not set');
-    }
-
-    return openAiProvider;
-  }
-
-  if (requested === AiProviderName.GEMINI) {
-    if (!geminiKey()) {
-      throw new Error('AI_PROVIDER=gemini but GEMINI_API_KEY is not set');
-    }
-
-    return geminiProvider;
-  }
-
   if (requested === AiProviderName.CLAUDE_CLI) {
     return claudeCliProvider;
   }
 
-  if (openAiKey()) {
-    return openAiProvider;
+  if (requested === AiProviderName.GROQ || requested === AiProviderName.GEMINI || requested === AiProviderName.META || requested === AiProviderName.OPENAI) {
+    if (availableEngines(requested).length === 0) {
+      throw new Error(`AI_PROVIDER=${requested} but ${KEY_FOR[requested]} is not set`);
+    }
+
+    return routerProvider(requested);
   }
 
-  if (geminiKey()) {
-    return geminiProvider;
+  if (availableEngines().length > 0) {
+    return routerProvider();
   }
 
   if (claudeInstalled()) {

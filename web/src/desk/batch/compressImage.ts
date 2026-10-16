@@ -22,3 +22,30 @@ export async function compressImage(file: File): Promise<string> {
 
   return canvas.toDataURL('image/jpeg', QUALITY);
 }
+
+/**
+ * A smaller copy of a photo for the smart check: AI services count image size
+ * against their free per-minute limits, and 768px is plenty to tell products
+ * and colours apart. The full photo is still the one that's saved.
+ */
+export async function shrinkForCheck(dataUrl: string, maxSide = 768): Promise<string> {
+  try {
+    const bitmap = await createImageBitmap(await (await fetch(dataUrl)).blob());
+
+    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+
+    const canvas = document.createElement('canvas');
+
+    canvas.width = Math.round(bitmap.width * scale);
+
+    canvas.height = Math.round(bitmap.height * scale);
+
+    canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+
+    bitmap.close();
+
+    return canvas.toDataURL('image/jpeg', 0.8);
+  } catch {
+    return dataUrl;
+  }
+}

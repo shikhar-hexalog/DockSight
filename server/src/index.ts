@@ -3,6 +3,7 @@ import { UniwareMode } from '@hexabuild/shared';
 import { BriefScheduler } from './ai/briefScheduler.ts';
 import { createApp } from './app.ts';
 import { config } from './config.ts';
+import { warmUpModels } from './ai/router.ts';
 import { migrate } from './db/index.ts';
 import { startDispatchEmailRetry } from './notify/dispatchEmails.ts';
 import { DispatchGuard } from './sync/dispatchGuard.ts';
@@ -39,6 +40,8 @@ const server = app.listen(config.port, '0.0.0.0', () => {
   }
 
   briefs.start();
+
+  warmUpModels();
 
   stopEmailRetry = startDispatchEmailRetry();
 });
