@@ -1,4 +1,4 @@
-import { ArrowRight, CircleCheck, CircleX, ImageOff, PackageSearch, RotateCw, Sparkles, TriangleAlert } from 'lucide-react';
+import { ArrowRight, CircleCheck, CircleX, ImageOff, RotateCw, TriangleAlert } from 'lucide-react';
 import { type FormEvent, type ReactNode, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -76,9 +76,9 @@ const GRADE_TEXT: Record<QcGrade, string> = {
 };
 
 const VERDICT_CARD: Record<MatchVerdict, string> = {
-  [MatchVerdict.MATCH]: 'border-ok/40 bg-ok/10',
-  [MatchVerdict.MISMATCH]: 'border-overdue/50 bg-overdue/10',
-  [MatchVerdict.UNSURE]: 'border-warn/50 bg-warn/10',
+  [MatchVerdict.MATCH]: 'bg-ok text-white',
+  [MatchVerdict.MISMATCH]: 'bg-overdue text-white',
+  [MatchVerdict.UNSURE]: 'bg-signal text-ink',
 };
 
 const VERDICT_TEXT: Record<MatchVerdict, string> = {
@@ -140,7 +140,7 @@ function ManifestFact({ target }: { target: QcReturn }) {
 
 function ReturnFacts({ target }: { target: QcReturn }) {
   return (
-    <div className="flex flex-wrap gap-x-8 gap-y-2 rounded-xl border bg-muted/30 px-5 py-3">
+    <div className="flex flex-wrap gap-x-8 gap-y-2 border-b pb-3">
       <Fact label="Return">
         <Mono>{target.sourceCode}</Mono>
       </Fact>
@@ -165,13 +165,13 @@ function ReturnFacts({ target }: { target: QcReturn }) {
 function ItemImage({ url, size = 'size-14' }: { url: string | null; size?: string }) {
   if (!url) {
     return (
-      <div className={cn('grid shrink-0 place-items-center rounded-md border bg-muted', size)}>
+      <div className={cn('grid shrink-0 place-items-center rounded-sm bg-muted', size)}>
         <ImageOff className="size-4 text-muted-foreground" />
       </div>
     );
   }
 
-  return <img src={url} alt="" className={cn('shrink-0 rounded-md border object-cover', size)} />;
+  return <img src={url} alt="" className={cn('shrink-0 rounded-sm bg-muted object-cover', size)} />;
 }
 
 // --------------------------------------------------------- step 1: the AI
@@ -252,14 +252,12 @@ function QcOperator() {
 
 function PhotoStep({ target, onPhoto, onSkip }: { target: QcReturn; onPhoto: (photo: string) => void; onSkip: () => void }) {
   return (
-    <div className="flex flex-col gap-4 rounded-xl border-2 border-dashed border-stage-expected/40 p-5">
+    <div className="flex flex-col gap-4 rounded-sm bg-muted p-6">
       <div className="flex items-start gap-3">
-        <Sparkles className="mt-0.5 size-5 shrink-0 text-stage-expected" />
-
         <div className="min-w-0 flex-1">
-          <p className="font-semibold">Step 1 · Smart product check</p>
+          <p className="font-display text-[20px] font-semibold tracking-[-0.01em] text-ink">Step 1 · Smart product check</p>
 
-          <p className="text-sm text-muted-foreground">
+          <p className="mt-1 text-[13px] text-muted-foreground">
             Open the parcel and take one photo of what's inside (not the shipping label). It's compared with what was sold: product, colour, print.
           </p>
         </div>
@@ -282,9 +280,9 @@ function PhotoStep({ target, onPhoto, onSkip }: { target: QcReturn; onPhoto: (ph
 
 function CheckingStep({ photo, target }: { photo: string; target: QcReturn }) {
   return (
-    <div className="flex flex-col gap-4 rounded-xl border-2 border-stage-expected/40 bg-stage-expected/5 p-5">
-      <p className="flex items-center gap-2 font-semibold">
-        <Spinner className="size-5" />
+    <div className="flex flex-col gap-4 rounded-sm bg-muted p-6">
+      <p className="flex items-center gap-3 font-display text-[20px] font-semibold tracking-[-0.01em] text-ink">
+        <Spinner className="size-6" />
         Comparing with the catalogue…
       </p>
 
@@ -307,19 +305,19 @@ function CheckingStep({ photo, target }: { photo: string; target: QcReturn }) {
 
 function VerdictIcon({ verdict }: { verdict: MatchVerdict }) {
   if (verdict === MatchVerdict.MATCH) {
-    return <CircleCheck className="size-6 shrink-0" />;
+    return <CircleCheck className="size-10 shrink-0" strokeWidth={1.75} />;
   }
 
   if (verdict === MatchVerdict.MISMATCH) {
-    return <CircleX className="size-6 shrink-0" />;
+    return <CircleX className="size-10 shrink-0" strokeWidth={1.75} />;
   }
 
-  return <TriangleAlert className="size-6 shrink-0" />;
+  return <TriangleAlert className="size-10 shrink-0" strokeWidth={1.75} />;
 }
 
 function CompareRow({ match, item, photo }: { match: ItemMatch; item: ReturnItem | undefined; photo: string | null }) {
   return (
-    <div className="flex items-center gap-3 rounded-lg bg-background/70 p-2">
+    <div className="flex items-center gap-3 rounded-sm bg-white p-2 text-ink">
       <ItemImage url={item?.catalogImageUrl ?? null} size="size-16" />
 
       <ItemImage url={photo} size="size-16" />
@@ -345,24 +343,24 @@ function VerdictCard({ check, target, photo, children }: { check: QcMatchCheck; 
   const byCode = new Map(target.items.map(item => [item.saleOrderItemCode, item]));
 
   return (
-    <div className={cn('flex flex-col gap-3 rounded-xl border-2 p-4', VERDICT_CARD[check.verdict])}>
-      <div className={cn('flex items-center gap-3', VERDICT_TEXT[check.verdict])}>
+    <div className={cn('flex flex-col gap-3 rounded-sm p-6 animate-in fade-in-0', VERDICT_CARD[check.verdict])}>
+      <div className="flex items-center gap-4">
         <VerdictIcon verdict={check.verdict} />
 
         <div className="min-w-0 flex-1">
-          <p className="text-lg font-semibold">{MATCH_VERDICT_LABEL[check.verdict]}</p>
+          <p className="font-display text-[28px] leading-tight font-semibold tracking-[-0.02em]">{MATCH_VERDICT_LABEL[check.verdict]}</p>
 
-          <p className="text-sm text-foreground">{VERDICT_NEXT[check.verdict]}</p>
+          <p className="text-sm">{VERDICT_NEXT[check.verdict]}</p>
         </div>
 
-        <span className="shrink-0 font-mono text-[11px] text-muted-foreground">{check.seconds}s</span>
+        <span className="shrink-0 font-mono text-[11px] opacity-70">{check.seconds}s</span>
       </div>
 
       {check.items.map(match => (
         <CompareRow key={match.code} match={match} item={byCode.get(match.code)} photo={photo} />
       ))}
 
-      <p className="text-xs text-muted-foreground">{check.note}</p>
+      <p className="text-xs opacity-80">{check.note}</p>
 
       {children}
     </div>
@@ -386,7 +384,7 @@ function MismatchStep({ check, target, photo, onDone }: { check: QcMatchCheck; t
   return (
     <VerdictCard check={check} target={target} photo={photo}>
       <div className="flex items-center gap-3">
-        <span className="font-mono text-2xl font-semibold tabular-nums text-overdue">{left}s</span>
+        <span className="font-display text-[28px] font-semibold tabular-nums">{left}s</span>
 
         <p className="text-sm font-medium">Moving to bad inventory</p>
       </div>
@@ -408,7 +406,7 @@ function AiNote({ note, onRetry }: { note: string | null; onRetry: (() => void) 
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-warn/50 bg-warn/10 px-4 py-2 text-sm">
+    <div className="flex flex-wrap items-center gap-3 text-[13px] text-warn">
       <p className="flex-1">
         {note} {onRetry ? 'Try again, or check it by hand.' : 'Check it by hand.'}
       </p>
@@ -433,7 +431,7 @@ function GradeButtons({ value, onChange }: { value: QcGrade; onChange: (grade: Q
           key={grade}
           type="button"
           onClick={() => onChange(grade)}
-          className={cn('h-9 rounded-md border-2 px-4 text-sm font-medium transition-colors', grade === value ? GRADE_ON[grade] : 'hover:bg-muted')}
+          className={cn('h-9 rounded-sm border px-4 text-sm font-medium transition-colors', grade === value ? GRADE_ON[grade] : 'hover:bg-muted')}
         >
           {QC_GRADE_LABEL[grade]}
         </button>
@@ -451,8 +449,8 @@ function ReasonChips({ value, onChange }: { value: QcReason | null; onChange: (r
           type="button"
           onClick={() => onChange(reason)}
           className={cn(
-            'h-7 rounded-full border px-3 text-xs transition-colors',
-            reason === value ? 'border-overdue bg-overdue/10 font-medium text-overdue' : 'text-muted-foreground hover:bg-muted'
+            'h-7 rounded-sm border px-3 text-xs transition-colors',
+            reason === value ? 'border-overdue bg-overdue font-medium text-white' : 'text-muted-foreground hover:bg-muted'
           )}
         >
           {QC_REASON_LABEL[reason]}
@@ -487,7 +485,7 @@ interface ItemRowProps {
 
 function ItemRow({ item, value, locked, onChange }: ItemRowProps) {
   return (
-    <div className={cn('flex flex-col gap-3 rounded-xl border p-3', locked && 'bg-overdue/5')}>
+    <div className="flex flex-col gap-3 border-b pb-3">
       <div className="flex items-center gap-3">
         <ItemImage url={item.catalogImageUrl} />
 
@@ -511,7 +509,7 @@ function ItemRow({ item, value, locked, onChange }: ItemRowProps) {
 
 function PayloadPreview({ payload, title }: { payload: UniwareQcPayload; title: string }) {
   return (
-    <details className="rounded-xl border bg-muted/30 px-4 py-2 text-sm">
+    <details className="border-t pt-3 text-sm">
       <summary className="cursor-pointer text-muted-foreground">{title}</summary>
 
       <pre className="mt-2 overflow-x-auto font-mono text-[11px] leading-relaxed">
@@ -527,12 +525,12 @@ function PayloadPreview({ payload, title }: { payload: UniwareQcPayload; title: 
 function DoneView({ record }: { record: QcRecord }) {
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-3 rounded-xl border-2 border-ok/40 bg-ok/10 px-5 py-3 text-ok">
-        <CircleCheck className="size-6" />
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-sm bg-ok p-6 text-white">
+        <CircleCheck className="size-10" strokeWidth={1.75} />
 
-        <span className="text-lg font-semibold">QC done</span>
+        <span className="font-display text-[28px] font-semibold tracking-[-0.02em]">QC done</span>
 
-        <span className="text-sm text-foreground">
+        <span className="text-sm">
           by {record.qcBy} {formatRelative(record.qcAt)} · shelf <Mono>{record.shelfCode}</Mono>
         </span>
       </div>
@@ -557,7 +555,7 @@ function NotReceivedWarning({ target }: { target: QcReturn }) {
   }
 
   return (
-    <p className="flex items-center gap-2 rounded-lg border border-overdue/40 bg-overdue/5 px-4 py-2 text-sm text-overdue">
+    <p className="flex items-center gap-2 text-[13px] text-overdue">
       <TriangleAlert className="size-4" />
       This parcel was never received at the dock. Receive it first, then QC it.
     </p>
@@ -717,7 +715,7 @@ function QcFlow({ target, onDone }: { target: QcReturn; onDone: (record: QcRecor
 
   // A phone scan can open a parcel before anyone has said who is doing QC.
   if (!scanner) {
-    return <p className="rounded-lg border border-warn/50 bg-warn/10 px-4 py-2 text-sm">Enter who is doing QC above to start.</p>;
+    return <p className="text-[13px] text-warn">Enter who is doing QC above to start.</p>;
   }
 
   if (step === Step.PHOTO) {
@@ -765,12 +763,10 @@ function QcBody({ target, onDone }: { target: QcReturn; onDone: (record: QcRecor
 function Workspace({ lookup, onDone }: { lookup: QcLookupResponse | null; onDone: (record: QcRecord) => void }) {
   if (!lookup) {
     return (
-      <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed p-10 text-center">
-        <PackageSearch className="size-8 text-muted-foreground" />
+      <div className="flex flex-col gap-1 py-6">
+        <p className="text-[17px] text-ink">Scan a parcel to start QC</p>
 
-        <p className="text-sm font-medium">Scan a parcel to start QC</p>
-
-        <p className="max-w-md text-sm text-muted-foreground">
+        <p className="max-w-xl text-[13px] text-muted-foreground">
           A smart check confirms it's the right product first. A wrong product fails right there; a right one goes to a quick condition check, then the shelf.
         </p>
       </div>
@@ -779,7 +775,7 @@ function Workspace({ lookup, onDone }: { lookup: QcLookupResponse | null; onDone
 
   if (!lookup.return) {
     return (
-      <p className="rounded-xl border-2 border-overdue/40 bg-overdue/10 px-5 py-3 text-lg font-semibold text-overdue">
+      <p className="rounded-sm bg-overdue p-6 font-display text-[22px] font-semibold tracking-[-0.01em] text-white">
         No return with code <Mono className="text-base">{lookup.code}</Mono>
       </p>
     );

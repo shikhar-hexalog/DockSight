@@ -39,15 +39,16 @@ const STATUS_LABEL: Record<ModuleStatus, string> = {
 };
 
 const STATUS_BADGE: Record<ModuleStatus, string> = {
-  [ModuleStatus.LIVE]: 'bg-ok/10 text-ok',
-  [ModuleStatus.NEXT]: 'bg-stage-expected/10 text-stage-expected',
-  [ModuleStatus.LATER]: 'bg-muted text-muted-foreground',
+  [ModuleStatus.LIVE]: 'text-signal',
+  [ModuleStatus.NEXT]: 'text-ink',
+  [ModuleStatus.LATER]: 'text-muted-foreground',
 };
 
+// Live is solid ink; what's next is a quiet panel; later is barely there.
 const STATUS_CARD: Record<ModuleStatus, string> = {
-  [ModuleStatus.LIVE]: 'bg-background ring-2 ring-ok',
-  [ModuleStatus.NEXT]: 'bg-background ring-1 ring-stage-expected/40',
-  [ModuleStatus.LATER]: 'border-2 border-dashed bg-muted/30',
+  [ModuleStatus.LIVE]: 'bg-ink text-white',
+  [ModuleStatus.NEXT]: 'bg-muted text-ink',
+  [ModuleStatus.LATER]: 'bg-muted/40 text-muted-foreground',
 };
 
 const BUSINESS_LINES: BusinessLine[] = [
@@ -162,7 +163,7 @@ function Branch({ index, count, children, span }: BranchProps) {
 
 function RootNode() {
   return (
-    <div className="mx-auto rounded-full bg-foreground px-5 py-2 text-[13px] font-semibold text-background">
+    <div className="mx-auto rounded-sm bg-ink px-5 py-2 font-display text-[15px] font-semibold text-white">
       Hexalog Ops
       <span className="ml-2 font-normal opacity-60">one platform</span>
     </div>
@@ -170,19 +171,11 @@ function RootNode() {
 }
 
 function LineNode({ line }: { line: BusinessLine }) {
-  const Icon = line.icon;
-
-  return (
-    <div className="mx-auto flex items-center gap-2 rounded-full border bg-background px-4 py-1.5 text-[13px] font-medium shadow-xs">
-      <Icon className="size-4 text-muted-foreground" />
-
-      {line.name}
-    </div>
-  );
+  return <div className="mx-auto border-b border-ink pb-1 font-display text-[15px] font-semibold text-ink">{line.name}</div>;
 }
 
 function StatusBadge({ status }: { status: ModuleStatus }) {
-  return <span className={cn('rounded-full px-2 py-0.5 font-mono text-[11px] font-medium', STATUS_BADGE[status])}>{STATUS_LABEL[status]}</span>;
+  return <span className={cn('font-mono text-[11px] font-medium whitespace-nowrap', STATUS_BADGE[status])}>{STATUS_LABEL[status]}</span>;
 }
 
 function FeatureText({ feature }: { feature: Feature }) {
@@ -199,22 +192,22 @@ function FeatureText({ feature }: { feature: Feature }) {
 
 function FeatureMark({ status }: { status: ModuleStatus }) {
   if (status === ModuleStatus.LIVE) {
-    return <Check className="size-3.5 shrink-0 text-ok" />;
+    return <Check className="size-3.5 shrink-0" />;
   }
 
-  return <span className="size-1.5 shrink-0 rounded-full bg-muted-foreground/40" />;
+  return <span className="w-3.5 shrink-0 text-center opacity-50">–</span>;
 }
 
 function ModuleCard({ module }: { module: Module }) {
   return (
-    <div className={cn('flex flex-1 flex-col rounded-xl p-4', STATUS_CARD[module.status])}>
+    <div className={cn('flex flex-1 flex-col rounded-sm p-4', STATUS_CARD[module.status])}>
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-[15px] font-semibold tracking-tight">{module.name}</h2>
+        <h2 className="font-display text-[16px] font-semibold tracking-[-0.01em]">{module.name}</h2>
 
         <StatusBadge status={module.status} />
       </div>
 
-      <p className="mt-1 text-[12px] text-muted-foreground">{module.summary}</p>
+      <p className="mt-1 text-[12px] opacity-70">{module.summary}</p>
 
       <ul className="mt-3 flex flex-col gap-1.5 text-[13px]">
         {module.features.map(feature => (
@@ -299,8 +292,8 @@ function BusinessLines() {
 
 function ReportsNode() {
   return (
-    <div className="mx-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 rounded-xl border bg-background px-5 py-3 text-[13px]">
-      <span className="font-medium">Reports across modules</span>
+    <div className="mx-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 rounded-sm bg-muted px-5 py-3 text-[13px]">
+      <span className="font-medium text-ink">Reports across modules</span>
 
       {CROSS_MODULE_REPORTS.map(report => (
         <span key={report} className="text-muted-foreground">
@@ -313,16 +306,10 @@ function ReportsNode() {
 
 function SharedPlatform() {
   return (
-    <div className="mx-2 rounded-xl bg-foreground px-5 py-4 text-background">
+    <div className="mx-2 rounded-sm bg-ink px-5 py-4 text-white">
       <div className="text-center text-[12px] opacity-70">Shared platform, built once, reused by every module</div>
 
-      <div className="mt-3 flex flex-wrap justify-center gap-2">
-        {SHARED_BLOCKS.map(block => (
-          <span key={block} className="rounded-md bg-background/10 px-2.5 py-1 text-[12px] ring-1 ring-background/15">
-            {block}
-          </span>
-        ))}
-      </div>
+      <p className="mt-2 text-center text-[13px]">{SHARED_BLOCKS.join(' · ')}</p>
     </div>
   );
 }

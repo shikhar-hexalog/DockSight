@@ -50,7 +50,7 @@ function SheetCheck({ onApproved }: { onApproved: () => void }) {
 
   if (checking) {
     return (
-      <p className="flex items-center gap-2 rounded-lg border border-stage-expected/40 bg-stage-expected/5 px-3 py-2 text-sm">
+      <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
         <Spinner className="size-4" />
         Smart check: reading the signed sheet…
       </p>
@@ -58,7 +58,7 @@ function SheetCheck({ onApproved }: { onApproved: () => void }) {
   }
 
   return (
-    <p className="flex items-center gap-2 rounded-lg border border-ok/40 bg-ok/10 px-3 py-2 text-sm">
+    <p className="flex items-center gap-2 text-[13px] text-ok">
       <CircleCheck className="size-4 text-ok" />
       <span>
         <span className="font-semibold">Approved.</span> Smart check found both signatures on the sheet.

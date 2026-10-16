@@ -1,4 +1,4 @@
-import { CircleCheck, ClipboardList, Printer } from 'lucide-react';
+import { CircleCheck, Printer } from 'lucide-react';
 import { useSearchParams } from 'react-router';
 
 import type { ManifestParcel, ReturnManifest } from '@hexabuild/shared';
@@ -36,11 +36,11 @@ function ManifestListItem({ manifest, active, onSelect }: { manifest: ReturnMani
       type="button"
       onClick={onSelect}
       className={cn(
-        'flex flex-col gap-0.5 rounded-lg border px-3 py-2 text-left transition-colors',
-        active ? 'border-foreground bg-background shadow-xs' : 'hover:bg-muted/60'
+        'flex flex-col gap-0.5 px-2 py-2.5 text-left transition-colors',
+        active ? 'bg-muted text-ink' : 'hover:bg-muted/60'
       )}
     >
-      <span className="flex items-center gap-2 text-sm font-medium">
+      <span className={cn('flex items-center gap-2 text-sm', active ? 'font-semibold' : 'font-medium')}>
         {manifest.courier}
 
         <span className="ml-auto font-mono text-xs text-muted-foreground tabular-nums">{manifest.count}</span>
@@ -63,7 +63,7 @@ function ManifestList({ selectedId, onSelect }: { selectedId: string | null; onS
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col divide-y border-y">
       {manifests.map(manifest => (
         <ManifestListItem key={manifest.id} manifest={manifest} active={manifest.id === selectedId} onSelect={() => onSelect(manifest.id)} />
       ))}
@@ -142,7 +142,7 @@ function ManifestView({ id }: { id: string }) {
     <div className="flex min-w-0 flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold">
+          <h2 className="font-display text-[20px] font-semibold tracking-[-0.01em] text-ink">
             {manifest.courier} <span className="font-normal text-muted-foreground">· {manifest.count} parcels</span>
           </h2>
 
@@ -168,12 +168,10 @@ function ManifestView({ id }: { id: string }) {
 function SelectedView({ id }: { id: string | null }) {
   if (!id) {
     return (
-      <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed p-10 text-center">
-        <ClipboardList className="size-8 text-muted-foreground" />
+      <div className="flex flex-col gap-1 py-6">
+        <p className="text-[17px] text-ink">No second scan needed</p>
 
-        <p className="text-sm font-medium">No second scan needed</p>
-
-        <p className="max-w-sm text-sm text-muted-foreground">
+        <p className="max-w-md text-[13px] text-muted-foreground">
           Each receiving handover becomes its courier's return manifest when the signed sheet is submitted. Pick one to see or print it.
         </p>
       </div>
